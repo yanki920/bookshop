@@ -14,35 +14,41 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
 .search-bar{padding:7px 14px;border:none;border-radius:20px;font-size:.85em;outline:none;width:190px}
 .filter-btn{padding:5px 12px;border:1px solid rgba(255,255,255,.4);background:transparent;color:white;border-radius:15px;cursor:pointer;font-size:.82em;transition:all .2s}
 .filter-btn.active{background:white;color:#2c3e50;font-weight:700}
-.worker-select{background:#34495e;color:white;border:1px solid #4a6278;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.85em} .btn-icon{background:none;border:none;cursor:pointer;color:white;font-size:1.2em;padding:5px}
+.worker-select{background:#34495e;color:white;border:1px solid #4a6278;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.85em}
+.btn-icon{background:none;border:none;cursor:pointer;color:white;font-size:1.2em;padding:5px}
 .sync-badge{font-size:.72em;padding:3px 9px;border-radius:10px;font-weight:600;white-space:nowrap}
 .sync-live{background:#27ae60;color:white}.sync-off{background:#e74c3c;color:white}
 .pipeline{display:flex;gap:10px;padding:15px;overflow-x:auto;min-height:calc(100vh - 65px)}
-.column{background:white;border-radius:10px;padding:13px;min-width:185px;flex:1;box-shadow:0 2px 8px rgba(0,0,0,.07);align-self:flex-start} .column-header{font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:3px solid;display:flex;justify-content:space-between;align-items:center;font-size:.85em}
+.column{background:white;border-radius:10px;padding:13px;min-width:185px;flex:1;box-shadow:0 2px 8px rgba(0,0,0,.07);align-self:flex-start}
+.column-header{font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:3px solid;display:flex;justify-content:space-between;align-items:center;font-size:.85em}
 .col-new .column-header{border-color:#3498db;color:#3498db}
 .col-ordered .column-header{border-color:#e67e22;color:#e67e22}
 .col-arrived .column-header{border-color:#9b59b6;color:#9b59b6}
 .col-called .column-header{border-color:#1abc9c;color:#1abc9c}
 .col-charged .column-header{border-color:#27ae60;color:#27ae60}
 .col-done .column-header{border-color:#95a5a6;color:#95a5a6}
-.col-unavailable .column-header{border-color:#e74c3c;color:#e74c3c} .order-card{background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:8px;border-left:4px solid;cursor:pointer;transition:transform .1s,box-shadow .1s}
+.col-unavailable .column-header{border-color:#e74c3c;color:#e74c3c}
+.order-card{background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:8px;border-left:4px solid;cursor:pointer;transition:transform .1s,box-shadow .1s}
 .order-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .col-new .order-card{border-color:#3498db}.col-ordered .order-card{border-color:#e67e22}
 .col-arrived .order-card{border-color:#9b59b6}.col-called .order-card{border-color:#1abc9c}
 .col-charged .order-card{border-color:#27ae60}.col-done .order-card{border-color:#95a5a6}
 .col-unavailable .order-card{border-color:#e74c3c}.order-card.overdue{border-color:#e74c3c!important}
-.card-name{font-weight:bold;font-size:.9em;margin-bottom:2px} .card-book{color:#555;font-size:.8em;margin-bottom:3px}
+.card-name{font-weight:bold;font-size:.9em;margin-bottom:2px}
+.card-book{color:#555;font-size:.8em;margin-bottom:3px}
 .card-meta{font-size:.73em;color:#999;display:flex;justify-content:space-between}
 .card-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .tag{font-size:.71em;padding:2px 6px;border-radius:4px;font-weight:600}
 .tag-worker{background:#ebf5fb;color:#2980b9}.tag-pay{background:#fef9e7;color:#e67e22}
 .tag-dep{background:#f0f0ff;color:#6c5ce7}.tag-late{background:#fdecea;color:#e74c3c}
-.count-badge{background:#eaf0f6;color:#5d6d7e;font-size:.72em;padding:2px 6px;border-radius:10px;font-weight:normal} .btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.85em;font-weight:600;transition:opacity .2s;display:inline-flex;align-items:center;gap:5px}
+.count-badge{background:#eaf0f6;color:#5d6d7e;font-size:.72em;padding:2px 6px;border-radius:10px;font-weight:normal}
+.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.85em;font-weight:600;transition:opacity .2s;display:inline-flex;align-items:center;gap:5px}
 .btn:hover{opacity:.85}.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-primary{background:#3498db;color:white}.btn-success{background:#27ae60;color:white}
 .btn-warning{background:#e67e22;color:white}.btn-danger{background:#e74c3c;color:white}
 .btn-secondary{background:#7f8c8d;color:white}.btn-wa{background:#25D366;color:white}
-.btn-sm{padding:4px 9px;font-size:.78em} .fab{position:fixed;bottom:25px;right:25px;width:52px;height:52px;background:#3498db;color:white;border:none;border-radius:50%;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(52,152,219,.45);display:flex;align-items:center;justify-content:center;z-index:500;transition:transform .2s}
+.btn-sm{padding:4px 9px;font-size:.78em}
+.fab{position:fixed;bottom:25px;right:25px;width:52px;height:52px;background:#3498db;color:white;border:none;border-radius:50%;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(52,152,219,.45);display:flex;align-items:center;justify-content:center;z-index:500;transition:transform .2s}
 .fab:hover{transform:scale(1.1)}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
@@ -57,30 +63,36 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .divider{border:none;border-top:1px solid #eee;margin:12px 0}
 .ac-wrap{position:relative}
-.ac-list{position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #ddd;border-top:none;border-radius:0 0 6px 6px;max-height:150px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 8px rgba(0,0,0,.1)} .ac-item{padding:8px 11px;cursor:pointer;font-size:.82em}.ac-item:hover{background:#f0f4f8}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #ddd;border-top:none;border-radius:0 0 6px 6px;max-height:150px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 8px rgba(0,0,0,.1)}
+.ac-item{padding:8px 11px;cursor:pointer;font-size:.82em}.ac-item:hover{background:#f0f4f8}
 .notify-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
 .notify-btn{padding:12px;border:2px solid;border-radius:10px;cursor:pointer;text-align:center;background:white;transition:all .2s;font-weight:600;font-size:.87em}
 .notify-btn:hover{transform:translateY(-2px)}
-.notify-btn .nb-icon{font-size:1.6em;display:block;margin-bottom:3px} .nwa{border-color:#25D366;color:#25D366}.nwa:hover{background:#25D366;color:white}
+.notify-btn .nb-icon{font-size:1.6em;display:block;margin-bottom:3px}
+.nwa{border-color:#25D366;color:#25D366}.nwa:hover{background:#25D366;color:white}
 .nsms{border-color:#2980b9;color:#2980b9}.nsms:hover{background:#2980b9;color:white}
 .nmail{border-color:#9b59b6;color:#9b59b6}.nmail:hover{background:#9b59b6;color:white}
 .nskip{border-color:#bbb;color:#888}.nskip:hover{background:#bbb;color:white}
-.notification{position:fixed;top:15px;right:15px;background:#27ae60;color:white;padding:10px 16px;border-radius:8px;z-index:9999;font-weight:600;font-size:.88em;transform:translateX(250%);transition:transform .3s;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:300px} .notification.show{transform:translateX(0)}.notification.error{background:#e74c3c}.notification.info{background:#3498db}
+.notification{position:fixed;top:15px;right:15px;background:#27ae60;color:white;padding:10px 16px;border-radius:8px;z-index:9999;font-weight:600;font-size:.88em;transform:translateX(250%);transition:transform .3s;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:300px}
+.notification.show{transform:translateX(0)}.notification.error{background:#e74c3c}.notification.info{background:#3498db}
 .login-screen{display:none;position:fixed;inset:0;background:#2c3e50;z-index:9998;align-items:center;justify-content:center}
 .login-screen.active{display:flex}
 .login-box{background:white;border-radius:14px;padding:32px;width:92%;max-width:370px;text-align:center}
 .login-box h2{margin-bottom:4px;color:#2c3e50}.login-box p{color:#888;margin-bottom:14px;font-size:.87em}
-.setup-note{background:#ebf5fb;border:1px solid #aed6f1;border-radius:8px;padding:10px;font-size:.81em;color:#2471a3;margin-bottom:12px;text-align:left} .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85em}
+.setup-note{background:#ebf5fb;border:1px solid #aed6f1;border-radius:8px;padding:10px;font-size:.81em;color:#2471a3;margin-bottom:12px;text-align:left}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85em}
 .detail-grid div strong{display:block;color:#888;font-size:.79em;margin-bottom:1px;font-weight:600}
 .history-item{padding:7px 10px;background:#f8f9fa;border-radius:6px;margin-bottom:4px;font-size:.81em}
 .history-status{font-weight:600}.history-meta{color:#aaa;font-size:.79em;margin-top:1px}
 .action-btn-group{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}
-.badge{padding:2px 8px;border-radius:10px;font-size:.75em;font-weight:700} .badge-new{background:#ebf5fb;color:#3498db}.badge-ordered{background:#fef9e7;color:#e67e22}
+.badge{padding:2px 8px;border-radius:10px;font-size:.75em;font-weight:700}
+.badge-new{background:#ebf5fb;color:#3498db}.badge-ordered{background:#fef9e7;color:#e67e22}
 .badge-arrived{background:#f5eef8;color:#9b59b6}.badge-called{background:#eafaf1;color:#1abc9c}
 .badge-charged{background:#d5f5e3;color:#27ae60}.badge-done{background:#f2f3f4;color:#7f8c8d}
 .badge-unavailable{background:#fdecea;color:#e74c3c}
 .loader{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.5);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}} @media(max-width:700px){.pipeline{flex-direction:column}.form-row{grid-template-columns:1fr}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:700px){.pipeline{flex-direction:column}.form-row{grid-template-columns:1fr}}
 </style>
 </head><body>
 <div class="login-screen active" id="loginScreen">
@@ -101,7 +113,6 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
     <p id="loginErr" style="color:#e74c3c;margin-top:8px;font-size:.83em"></p>
   </div>
 </div>
-
 <div class="header">
   <span style="font-size:1.3em">📚</span>
   <h1 id="headerTitle">Bookshop Order Manager</h1>
@@ -109,12 +120,9 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
   <input type="text" class="search-bar" id="globalSearch" placeholder="🔍 Search orders…" oninput="renderAll()"/>
   <button class="filter-btn active" id="filterAll" onclick="setFilter('all')">All Orders</button>
   <button class="filter-btn" id="filterMine" onclick="setFilter('mine')">My Orders</button>
-  <select class="worker-select" id="workerSelect" onchange="changeWorker()">
-    <option value="">— Who am I? —</option>
-  </select>
+  <select class="worker-select" id="workerSelect" onchange="changeWorker()"><option value="">— Who am I? —</option></select>
   <button class="btn-icon" onclick="openModal('settingsModal')">⚙️</button>
 </div>
-
 <div class="pipeline">
   <div class="column col-new"><div class="column-header">🆕 New <span class="count-badge" id="cnt-new">0</span></div><div id="cards-new"></div></div>
   <div class="column col-ordered"><div class="column-header">📦 Ordered <span class="count-badge" id="cnt-ordered">0</span></div><div id="cards-ordered"></div></div>
@@ -124,16 +132,11 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
   <div class="column col-done"><div class="column-header">✅ Done <span class="count-badge" id="cnt-done">0</span></div><div id="cards-done"></div></div>
   <div class="column col-unavailable"><div class="column-header">❌ Not Available <span class="count-badge" id="cnt-unavailable">0</span></div><div id="cards-unavailable"></div></div>
 </div>
-
 <button class="fab" onclick="openModal('newOrderModal')">+</button>
 <div class="notification" id="notification"></div>
-
 <div class="modal-overlay" id="newOrderModal">
   <div class="modal">
-    <div class="modal-header">
-      <h2>➕ New Customer Order</h2>
-      <button class="btn btn-secondary btn-sm" onclick="closeModal('newOrderModal')">✕</button>
-    </div>
+    <div class="modal-header"><h2>➕ New Customer Order</h2><button class="btn btn-secondary btn-sm" onclick="closeModal('newOrderModal')">✕</button></div>
     <div class="form-group ac-wrap">
       <label>Search Customer (Erply)</label>
       <input type="text" id="custSearch" placeholder="Type name or phone…" oninput="searchCustomers()" autocomplete="off"/>
@@ -167,7 +170,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
       <div class="form-group"><label>Expected Arrival</label><input type="date" id="fArrival"/></div>
     </div>
     <hr class="divider">
-     <div style="font-weight:600;font-size:.83em;color:#555;margin-bottom:10px">💳 Payment</div>
+    <div style="font-weight:600;font-size:.83em;color:#555;margin-bottom:10px">💳 Payment</div>
     <div class="form-row">
       <div class="form-group">
         <label>Payment Method</label>
@@ -190,17 +193,10 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
     </div>
   </div>
 </div>
-
-<div class="modal-overlay" id="orderDetailModal">
-  <div class="modal"><div id="detailContent"></div></div>
-</div>
-
+<div class="modal-overlay" id="orderDetailModal"><div class="modal"><div id="detailContent"></div></div></div>
 <div class="modal-overlay" id="notifyModal">
   <div class="modal" style="max-width:460px">
-    <div class="modal-header">
-      <h2 id="notifyTitle">📬 Notify Customer</h2>
-      <button class="btn btn-secondary btn-sm" onclick="skipNotify()">✕</button>
-    </div>
+    <div class="modal-header"><h2 id="notifyTitle">📬 Notify Customer</h2><button class="btn btn-secondary btn-sm" onclick="skipNotify()">✕</button></div>
     <p style="font-size:.86em;color:#555;margin-bottom:8px"><strong id="notifyCustomerName"></strong></p>
     <div class="notify-options">
       <div class="notify-btn nwa" onclick="doNotify('wa')"><span class="nb-icon">📱</span>WhatsApp</div>
@@ -215,13 +211,9 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
     </div>
   </div>
 </div>
-
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
-    <div class="modal-header">
-      <h2>⚙️ Settings</h2>
-      <button class="btn btn-secondary btn-sm" onclick="closeModal('settingsModal')">✕</button>
-    </div>
+    <div class="modal-header"><h2>⚙️ Settings</h2><button class="btn btn-secondary btn-sm" onclick="closeModal('settingsModal')">✕</button></div>
     <div class="form-group"><label>Shop Name</label><input type="text" id="sShopName" placeholder="e.g. Tiferes Judaica"/></div>
     <div class="form-group"><label>Shop Phone</label><input type="text" id="sShopPhone" placeholder="e.g. +1 555-0000"/></div>
     <div class="form-group"><label>Workers — one name per line</label><textarea id="sWorkers" style="height:110px"></textarea></div>
@@ -233,12 +225,12 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
     <div class="form-group"><label>Erply Password</label><input type="password" id="sErplyPass" placeholder="Erply password"/></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px">
       <button class="btn btn-danger btn-sm" onclick="doLogout()">🔒 Logout</button>
-      <button class="btn btn-primary" onclick="saveSettings()">💾 Save & Sync</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Save &amp; Sync</button>
     </div>
   </div>
 </div>
-
 <script>
+const PROXY='https://corsproxy.io/?';
 const firebaseConfig={apiKey:"AIzaSyBprW8gvfVWcI0JtjYmN952B-oscdmAEc0",authDomain:"bookshop-orders.firebaseapp.com",projectId:"bookshop-orders",storageBucket:"bookshop-orders.firebasestorage.app",messagingSenderId:"355881664186",appId:"1:355881664186:web:022156c2134e240cce4c83"};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
@@ -249,42 +241,19 @@ const NB={new:'📦 Mark as Ordered',ordered:'🚚 Mark as Arrived',arrived:'�
 const PI={Cash:'💵','Credit Card':'💳','Bank Transfer':'🏦',Other:'🔄'};
 let S={loggedIn:false,currentWorker:'',orders:[],erplyCC:'',erplyUser:'',erplyPass:'',workers:['Worker 1','Worker 2','Worker 3','Worker 4','Worker 5'],shopName:'Our Bookshop',shopPhone:'',shopPassword:null,filter:'all'};
 let _uo=null,_us=null,_isFirst=false,_ctTimer=null,_bkTimer=null,_selCustId=null,_erplySK=null,_erplySKExp=0;
-
-function saveLocal(){localStorage.setItem('bom_v8',JSON.stringify({loggedIn:S.loggedIn,currentWorker:S.currentWorker}));}
-function loadLocal(){try{const p=JSON.parse(localStorage.getItem('bom_v8')||'{}');S.loggedIn=p.loggedIn||false;S.currentWorker=p.currentWorker||'';}catch(e){}}
-
+function saveLocal(){localStorage.setItem('bom_v9',JSON.stringify({loggedIn:S.loggedIn,currentWorker:S.currentWorker}));}
+function loadLocal(){try{const p=JSON.parse(localStorage.getItem('bom_v9')||'{}');S.loggedIn=p.loggedIn||false;S.currentWorker=p.currentWorker||'';}catch(e){}}
 function startListeners(){
-  _uo=db.collection('orders').onSnapshot(snap=>{
-    S.orders=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();
-    document.getElementById('syncBadge').textContent='🟢 Live';
-    document.getElementById('syncBadge').className='sync-badge sync-live';
-  },()=>{document.getElementById('syncBadge').textContent='🔴 Offline';document.getElementById('syncBadge').className='sync-badge sync-off';});
-  _us=db.collection('settings').doc('config').onSnapshot(doc=>{
-    if(doc.exists){const d=doc.data();
-      S.workers=d.workers||S.workers;S.shopName=d.shopName||S.shopName;
-      S.shopPhone=d.shopPhone||S.shopPhone;S.shopPassword=d.shopPassword||S.shopPassword;
-      S.erplyCC=d.erplyCC||'';S.erplyUser=d.erplyUser||'';S.erplyPass=d.erplyPass||'';
-      document.getElementById('headerTitle').textContent=S.shopName;renderAll();}
-  });
+  _uo=db.collection('orders').onSnapshot(snap=>{S.orders=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();document.getElementById('syncBadge').textContent='🟢 Live';document.getElementById('syncBadge').className='sync-badge sync-live';},()=>{document.getElementById('syncBadge').textContent='🔴 Offline';document.getElementById('syncBadge').className='sync-badge sync-off';});
+  _us=db.collection('settings').doc('config').onSnapshot(doc=>{if(doc.exists){const d=doc.data();S.workers=d.workers||S.workers;S.shopName=d.shopName||S.shopName;S.shopPhone=d.shopPhone||S.shopPhone;S.shopPassword=d.shopPassword||S.shopPassword;S.erplyCC=d.erplyCC||'';S.erplyUser=d.erplyUser||'';S.erplyPass=d.erplyPass||'';document.getElementById('headerTitle').textContent=S.shopName;renderAll();}});
 }
 function stopListeners(){if(_uo){_uo();_uo=null;}if(_us){_us();_us=null;}}
-
-async function initLogin(){
-  try{const doc=await db.collection('settings').doc('config').get();
-    if(!doc.exists||!doc.data().shopPassword){_isFirst=true;
-      document.getElementById('setupNote').style.display='block';
-      document.getElementById('confirmGrp').style.display='block';
-      document.getElementById('loginBtn').textContent='Create Password & Enter';
-      document.getElementById('loginSubtitle').textContent='First time — create your shop password';}
-  }catch(e){}
-}
-
+async function initLogin(){try{const doc=await db.collection('settings').doc('config').get();if(!doc.exists||!doc.data().shopPassword){_isFirst=true;document.getElementById('setupNote').style.display='block';document.getElementById('confirmGrp').style.display='block';document.getElementById('loginBtn').textContent='Create Password & Enter';document.getElementById('loginSubtitle').textContent='First time — create your shop password';}}catch(e){}}
 async function doLogin(){
   const err=document.getElementById('loginErr'),btn=document.getElementById('loginBtn');
-  err.textContent='';
-  const pw=document.getElementById('loginPw').value.trim();
+  err.textContent='';const pw=document.getElementById('loginPw').value.trim();
   if(!pw){err.textContent='Please enter a password.';return;}
-  btn.innerHTML='<span class="loader"></span> Checking…';btn.disabled=true;
+  btn.innerHTML='<span class="loader"></span> Checking...';btn.disabled=true;
   try{
     const doc=await db.collection('settings').doc('config').get();
     if(!doc.exists||!doc.data().shopPassword){
@@ -299,132 +268,102 @@ async function doLogin(){
   }catch(e){err.textContent='Connection error — check internet.';}
   btn.innerHTML=_isFirst?'Create Password & Enter':'Enter';btn.disabled=false;
 }
-
 async function getErplySession(){
   const cc=S.erplyCC,un=S.erplyUser,pw=S.erplyPass;
   if(!cc||!un||!pw)return null;
   if(_erplySK&&Date.now()<_erplySKExp)return{sk:_erplySK,cc};
   try{
-    async function getErplySession(){
-  const cc=S.erplyCC,un=S.erplyUser,pw=S.erplyPass;
-  if(!cc||!un||!pw)return null;
-  if(_erplySK&&Date.now()<_erplySKExp)return{sk:_erplySK,cc};
-  try{
-    const url=`https://corsproxy.io/?https://${cc}.erply.com/api/?request=verifyUser&clientCode=${cc}&username=${encodeURIComponent(un)}&password=${encodeURIComponent(pw)}`;
-    const r=await fetch(url);const d=await r.json();
-    if(d.status?.responseStatus==='ok'){_erplySK=d.records[0].sessionKey;_erplySKExp=Date.now()+3500000;return{sk:_erplySK,cc};}
-  }catch(e){}return null;
-}&clientCode=${cc}&username=${encodeURIComponent(un)}&password=${encodeURIComponent(pw)}`;
-    const r=await fetch(url);const d=await r.json();
-    if(d.status?.responseStatus==='ok'){_erplySK=d.records[0].sessionKey;_erplySKExp=Date.now()+3500000;return{sk:_erplySK,cc};}
+    const target='https://'+cc+'.erply.com/api/?request=verifyUser&clientCode='+cc+'&username='+encodeURIComponent(un)+'&password='+encodeURIComponent(pw);
+    const r=await fetch(PROXY+encodeURIComponent(target));
+    const d=await r.json();
+    if(d.status&&d.status.responseStatus==='ok'){_erplySK=d.records[0].sessionKey;_erplySKExp=Date.now()+3500000;return{sk:_erplySK,cc};}
   }catch(e){}return null;
 }
-
 async function erplyCall(params){
   const s=await getErplySession();if(!s)return null;
   try{
-    const p=new URLSearchParams({...params,clientCode:s.cc,sessionKey:s.sk});
-    const r=await fetch(`https://corsproxy.io/?https://${s.cc}.erply.com/api/?${p.toString()}`);
+    const p=new URLSearchParams(Object.assign({},params,{clientCode:s.cc,sessionKey:s.sk}));
+    const target='https://'+s.cc+'.erply.com/api/?'+p.toString();
+    const r=await fetch(PROXY+encodeURIComponent(target));
     return await r.json();
   }catch(e){return null;}
 }
-
 function searchCustomers(){
   const q=document.getElementById('custSearch').value.trim(),list=document.getElementById('custList');
   if(q.length<2){list.style.display='none';return;}
   clearTimeout(_ctTimer);
-  _ctTimer=setTimeout(async()=>{
-    const data=await erplyCall({request:'getCustomers',searchName:q,recordsOnPage:8});
+  _ctTimer=setTimeout(async function(){
+    const data=await erplyCall({request:'getCustomers',searchName:q,recordsOnPage:'8'});
     list.innerHTML='';
-    if(data?.records?.length>0){
-      data.records.forEach(c=>{const d=document.createElement('div');d.className='ac-item';
-        d.textContent=`${c.fullName||''}${c.phone?' · '+c.phone:''}${c.email?' · '+c.email:''}`;
-        d.onclick=()=>{document.getElementById('fName').value=c.fullName||'';document.getElementById('fPhone').value=c.phone||'';document.getElementById('fEmail').value=c.email||'';document.getElementById('custSearch').value=c.fullName||'';_selCustId=c.id;list.style.display='none';};
-        list.appendChild(d);});list.style.display='block';
+    if(data&&data.records&&data.records.length>0){
+      data.records.forEach(function(c){const d=document.createElement('div');d.className='ac-item';d.textContent=(c.fullName||'')+(c.phone?' - '+c.phone:'')+(c.email?' - '+c.email:'');d.onclick=function(){document.getElementById('fName').value=c.fullName||'';document.getElementById('fPhone').value=c.phone||'';document.getElementById('fEmail').value=c.email||'';document.getElementById('custSearch').value=c.fullName||'';_selCustId=c.id;list.style.display='none';};list.appendChild(d);});list.style.display='block';
     }else{list.innerHTML='<div class="ac-item" style="color:#aaa">No match — fill manually</div>';list.style.display='block';_selCustId=null;}
   },400);
 }
-
 function searchBooks(){
   const q=document.getElementById('fBook').value.trim(),list=document.getElementById('bookList');
   if(q.length<2){list.style.display='none';return;}
   clearTimeout(_bkTimer);
-  _bkTimer=setTimeout(async()=>{
-    const data=await erplyCall({request:'getProducts',searchName:q,recordsOnPage:8});
+  _bkTimer=setTimeout(async function(){
+    const data=await erplyCall({request:'getProducts',searchName:q,recordsOnPage:'8'});
     list.innerHTML='';
-    if(data?.records?.length>0){
-      data.records.forEach(p=>{const d=document.createElement('div');d.className='ac-item';
-        const price=p.price||p.priceListPrices?.[0]?.price||'';
-        d.textContent=`${p.name||''}${price?' — $'+price:''}`;
-        d.onclick=()=>{document.getElementById('fBook').value=p.name||'';if(price)document.getElementById('fPrice').value=price;list.style.display='none';};
-        list.appendChild(d);});list.style.display='block';
+    if(data&&data.records&&data.records.length>0){
+      data.records.forEach(function(p){const d=document.createElement('div');d.className='ac-item';const price=p.price||(p.priceListPrices&&p.priceListPrices[0]?p.priceListPrices[0].price:'');d.textContent=(p.name||'')+(price?' - $'+price:'');d.onclick=function(){document.getElementById('fBook').value=p.name||'';if(price)document.getElementById('fPrice').value=price;list.style.display='none';};list.appendChild(d);});list.style.display='block';
     }else{list.innerHTML='<div class="ac-item" style="color:#aaa">No match — type manually</div>';list.style.display='block';}
   },400);
 }
-
 async function saveNewOrder(){
   const name=document.getElementById('fName').value.trim(),phone=document.getElementById('fPhone').value.trim(),book=document.getElementById('fBook').value.trim();
   if(!name||!phone||!book){notify('Fill in: Name, Phone & Book','error');return;}
   const btn=document.getElementById('saveOrderBtn');btn.disabled=true;btn.innerHTML='<span class="loader"></span>';
   const o={customerName:name,customerPhone:phone,customerEmail:document.getElementById('fEmail').value.trim(),erplyCustId:_selCustId||null,bookTitle:book,price:document.getElementById('fPrice').value.trim(),department:document.getElementById('fDept').value,supplier:document.getElementById('fSupplier').value.trim(),expectedArrival:document.getElementById('fArrival').value,assignedWorker:document.getElementById('fWorker').value,paymentMethod:document.getElementById('fPayMethod').value,deposit:document.getElementById('fDeposit').value.trim(),notes:document.getElementById('fNotes').value.trim(),status:'new',createdAt:Date.now(),updatedAt:Date.now(),history:[{status:'new',worker:S.currentWorker,ts:Date.now(),note:'Order created'}]};
-  try{await db.collection('orders').add(o);closeModal('newOrderModal');clearNewForm();notify('Order saved!');}
-  catch(e){notify('Error: '+e.message,'error');}
-  btn.disabled=false;btn.innerHTML='💾 Save Order';
+  try{await db.collection('orders').add(o);closeModal('newOrderModal');clearNewForm();notify('Order saved!');}catch(e){notify('Error: '+e.message,'error');}
+  btn.disabled=false;btn.innerHTML='Save Order';
 }
-
 async function advanceOrder(id){
-  const o=S.orders.find(x=>x.id===id);if(!o||!NEXT[o.status])return;
+  const o=S.orders.find(function(x){return x.id===id;});if(!o||!NEXT[o.status])return;
   const ns=NEXT[o.status];
-  const nh=[...(o.history||[]),{status:ns,worker:S.currentWorker,ts:Date.now(),note:`Moved to: ${SL[ns]}`}];
-  try{await db.collection('orders').doc(id).update({status:ns,updatedAt:Date.now(),history:nh});closeModal('orderDetailModal');notify(SL[ns]);if(ns==='arrived'){openNotifyModal(o,'arrived');}}
-  catch(e){notify('Error','error');}
+  const nh=(o.history||[]).concat([{status:ns,worker:S.currentWorker,ts:Date.now(),note:'Moved to: '+SL[ns]}]);
+  try{await db.collection('orders').doc(id).update({status:ns,updatedAt:Date.now(),history:nh});closeModal('orderDetailModal');notify(SL[ns]);if(ns==='arrived'){openNotifyModal(o,'arrived');}}catch(e){notify('Error','error');}
 }
-
 async function markUnavailable(id){
-  const o=S.orders.find(x=>x.id===id);if(!o)return;
+  const o=S.orders.find(function(x){return x.id===id;});if(!o)return;
   if(!confirm('Mark as NOT AVAILABLE?'))return;
-  const nh=[...(o.history||[]),{status:'unavailable',worker:S.currentWorker,ts:Date.now(),note:'Marked as not available'}];
-  try{await db.collection('orders').doc(id).update({status:'unavailable',updatedAt:Date.now(),history:nh});closeModal('orderDetailModal');notify('Marked as Not Available');openNotifyModal(o,'unavailable');}
-  catch(e){notify('Error','error');}
+  const nh=(o.history||[]).concat([{status:'unavailable',worker:S.currentWorker,ts:Date.now(),note:'Marked as not available'}]);
+  try{await db.collection('orders').doc(id).update({status:'unavailable',updatedAt:Date.now(),history:nh});closeModal('orderDetailModal');notify('Marked as Not Available');openNotifyModal(o,'unavailable');}catch(e){notify('Error','error');}
 }
-
 async function deleteOrder(id){if(!confirm('Delete this order?'))return;try{await db.collection('orders').doc(id).delete();closeModal('orderDetailModal');notify('Deleted');}catch(e){notify('Error','error');}}
-
 async function reassignOrder(id){
-  const o=S.orders.find(x=>x.id===id);if(!o)return;
+  const o=S.orders.find(function(x){return x.id===id;});if(!o)return;
   const w=prompt('Assign to worker:\n\n'+S.workers.join('\n'));
   if(w&&w.trim()){try{await db.collection('orders').doc(id).update({assignedWorker:w.trim(),updatedAt:Date.now()});notify('Reassigned!');showDetail(id);}catch(e){notify('Error','error');}}
 }
-
 function buildMsg(o,type){
-  const shop=S.shopName||'Our Bookshop',ph=S.shopPhone?`\nCall us: ${S.shopPhone}`:'';
-  if(type==='unavailable')return `Dear ${o.customerName},\n\nWe are sorry — the book you ordered is not available:\n\n📖 ${o.bookTitle}\n\nWe apologize for the inconvenience.${ph}\n${shop}`;
+  const shop=S.shopName||'Our Bookshop',ph=S.shopPhone?'\nCall us: '+S.shopPhone:'';
+  if(type==='unavailable')return 'Dear '+o.customerName+',\n\nWe are sorry — the book you ordered is not available:\n\n'+o.bookTitle+'\n\nWe apologize for the inconvenience.'+ph+'\n'+shop;
   const rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
-  const bal=(o.price&&parseFloat(rem)>0)?`\n💳 Remaining: $${rem}`:'';
-   return `Dear ${o.customerName},\n\nYour book has arrived and is ready for pickup!\n\n📖 ${o.bookTitle}${o.price?'\n💵 Price: $'+o.price:''}${o.deposit?'\n✅ Deposit: $'+o.deposit:''}${bal}\n\nSee you soon!${ph}\n${shop}`;
+  const bal=(o.price&&parseFloat(rem)>0)?'\nRemaining: $'+rem:'';
+  return 'Dear '+o.customerName+',\n\nYour book has arrived and is ready for pickup!\n\n'+o.bookTitle+(o.price?'\nPrice: $'+o.price:'')+(o.deposit?'\nDeposit: $'+o.deposit:'')+bal+'\n\nSee you soon!'+ph+'\n'+shop;
 }
-
 function openNotifyModal(o,type){
-  document.getElementById('notifyTitle').textContent=type==='unavailable'?'📋 Book Not Available':'📬 Notify Customer';
-  document.getElementById('notifyCustomerName').textContent=type==='unavailable'?`"${o.bookTitle}" — notifying ${o.customerName}`:`${o.customerName}'s book arrived!`;
+  document.getElementById('notifyTitle').textContent=type==='unavailable'?'Book Not Available':'Notify Customer';
+  document.getElementById('notifyCustomerName').textContent=type==='unavailable'?o.bookTitle+' - notifying '+o.customerName:o.customerName+"'s book arrived!";
   document.getElementById('notifyMsg').value=buildMsg(o,type);
   document.getElementById('notifyPhone').value=o.customerPhone||'';
   document.getElementById('notifyEmail').value=o.customerEmail||'';
   openModal('notifyModal');
 }
-
 function doNotify(type){
   const msg=document.getElementById('notifyMsg').value,phone=document.getElementById('notifyPhone').value.trim(),email=document.getElementById('notifyEmail').value.trim();
-  if(type==='wa'){window.open(`https://wa.me/${phone.replace(/[^0-9+]/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');notify('WhatsApp opened!','info');}
-  else if(type==='sms'){window.location.href=`sms:${phone}?body=${encodeURIComponent(msg)}`;notify('SMS opened!','info');}
-  else if(type==='email'){window.location.href=`mailto:${email}?subject=${encodeURIComponent('Update on your book order')}&body=${encodeURIComponent(msg)}`;notify('Email opened!','info');}
+  if(type==='wa'){window.open('https://wa.me/'+phone.replace(/[^0-9+]/g,'')+'?text='+encodeURIComponent(msg),'_blank');notify('WhatsApp opened!','info');}
+  else if(type==='sms'){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);notify('SMS opened!','info');}
+  else if(type==='email'){window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Update on your book order')+'&body='+encodeURIComponent(msg);notify('Email opened!','info');}
   closeModal('notifyModal');
 }
 function skipNotify(){closeModal('notifyModal');notify('Skipped!','info');}
 function setFilter(f){S.filter=f;document.getElementById('filterAll').className='filter-btn'+(f==='all'?' active':'');document.getElementById('filterMine').className='filter-btn'+(f==='mine'?' active':'');renderAll();}
-
 async function saveSettings(){
-  S.workers=document.getElementById('sWorkers').value.split('\n').map(w=>w.trim()).filter(Boolean);
+  S.workers=document.getElementById('sWorkers').value.split('\n').map(function(w){return w.trim();}).filter(Boolean);
   S.shopName=document.getElementById('sShopName').value.trim()||'Our Bookshop';
   S.shopPhone=document.getElementById('sShopPhone').value.trim();
   S.erplyCC=document.getElementById('sErplyCC').value.trim();
@@ -434,83 +373,74 @@ async function saveSettings(){
   const u={workers:S.workers,shopName:S.shopName,shopPhone:S.shopPhone,erplyCC:S.erplyCC,erplyUser:S.erplyUser,erplyPass:S.erplyPass};
   if(np)u.shopPassword=np;
   _erplySK=null;_erplySKExp=0;
-  try{await db.collection('settings').doc('config').set(u,{merge:true});closeModal('settingsModal');notify('Settings saved!');}
-  catch(e){notify('Error saving','error');}
+  try{await db.collection('settings').doc('config').set(u,{merge:true});closeModal('settingsModal');notify('Settings saved!');}catch(e){notify('Error saving','error');}
 }
-
 function doLogout(){if(!confirm('Log out?'))return;stopListeners();S.loggedIn=false;saveLocal();closeModal('settingsModal');document.getElementById('loginScreen').classList.add('active');_isFirst=false;document.getElementById('setupNote').style.display='none';document.getElementById('confirmGrp').style.display='none';document.getElementById('loginBtn').textContent='Enter';initLogin();}
-
 function renderAll(){
-  const search=(document.getElementById('globalSearch')?.value||'').toLowerCase();
-  document.getElementById('workerSelect').innerHTML='<option value="">— Who am I? —</option>'+S.workers.map(w=>`<option value="${esc(w)}"${S.currentWorker===w?' selected':''}>${esc(w)}</option>`).join('');
-  document.getElementById('fWorker').innerHTML='<option value="">— Assign —</option>'+S.workers.map(w=>`<option>${esc(w)}</option>`).join('');
-  STATUSES.forEach(st=>{
-    let orders=S.orders.filter(o=>o.status===st);
-    if(S.filter==='mine'&&S.currentWorker)orders=orders.filter(o=>o.assignedWorker===S.currentWorker);
-    if(search)orders=orders.filter(o=>(o.customerName||'').toLowerCase().includes(search)||(o.bookTitle||'').toLowerCase().includes(search)||(o.customerPhone||'').includes(search));
-    document.getElementById(`cnt-${st}`).textContent=orders.length;
-    const el=document.getElementById(`cards-${st}`);
+  const search=(document.getElementById('globalSearch')?document.getElementById('globalSearch').value:'').toLowerCase();
+  document.getElementById('workerSelect').innerHTML='<option value="">Who am I?</option>'+S.workers.map(function(w){return '<option value="'+esc(w)+'"'+(S.currentWorker===w?' selected':'')+'>'+esc(w)+'</option>';}).join('');
+  document.getElementById('fWorker').innerHTML='<option value="">Assign...</option>'+S.workers.map(function(w){return '<option>'+esc(w)+'</option>';}).join('');
+  STATUSES.forEach(function(st){
+    var orders=S.orders.filter(function(o){return o.status===st;});
+    if(S.filter==='mine'&&S.currentWorker)orders=orders.filter(function(o){return o.assignedWorker===S.currentWorker;});
+    if(search)orders=orders.filter(function(o){return (o.customerName||'').toLowerCase().indexOf(search)>-1||(o.bookTitle||'').toLowerCase().indexOf(search)>-1||(o.customerPhone||'').indexOf(search)>-1;});
+    document.getElementById('cnt-'+st).textContent=orders.length;
+    var el=document.getElementById('cards-'+st);
     if(!orders.length){el.innerHTML='<div style="text-align:center;padding:20px;color:#ccc;font-size:.82em">No orders here</div>';return;}
-    el.innerHTML=orders.sort((a,b)=>b.updatedAt-a.updatedAt).map(o=>{
-      const over=o.expectedArrival&&st!=='done'&&st!=='unavailable'&&new Date(o.expectedArrival)<new Date();
-      const pi=o.paymentMethod?PI[o.paymentMethod]||'💰':'';
-      const di=o.department==='Judaica'?'✡️':'📚';
-      return `<div class="order-card${over?' overdue':''}" onclick="showDetail('${o.id}')">
-        <div class="card-name">${esc(o.customerName)}${over?' <span class="tag tag-late">LATE</span>':''}</div>
-        <div class="card-book">${di} ${esc(o.bookTitle)}</div>
-        <div class="card-meta"><span>📞 ${esc(o.customerPhone)}</span>${o.expectedArrival?`<span>📅 ${o.expectedArrival}</span>`:''}</div>
-        <div class="card-tags">
-          ${o.assignedWorker?`<span class="tag tag-worker">👤 ${esc(o.assignedWorker)}</span>`:''}
-          ${o.department?`<span class="tag tag-dep">${di} ${esc(o.department)}</span>`:''}
-          ${o.paymentMethod?`<span class="tag tag-pay">${pi} ${esc(o.paymentMethod)}</span>`:''}
-        </div>
-      </div>`;
+    el.innerHTML=orders.sort(function(a,b){return b.updatedAt-a.updatedAt;}).map(function(o){
+      var over=o.expectedArrival&&st!=='done'&&st!=='unavailable'&&new Date(o.expectedArrival)<new Date();
+      var pi=o.paymentMethod?(PI[o.paymentMethod]||''):'';
+      var di=o.department==='Judaica'?'✡️':'📚';
+      return '<div class="order-card'+(over?' overdue':'')+'" onclick="showDetail(\''+o.id+'\')">'+
+        '<div class="card-name">'+esc(o.customerName)+(over?' <span class="tag tag-late">LATE</span>':'')+'</div>'+
+        '<div class="card-book">'+di+' '+esc(o.bookTitle)+'</div>'+
+        '<div class="card-meta"><span>'+esc(o.customerPhone)+'</span>'+(o.expectedArrival?'<span>'+o.expectedArrival+'</span>':'')+'</div>'+
+        '<div class="card-tags">'+
+        (o.assignedWorker?'<span class="tag tag-worker">👤 '+esc(o.assignedWorker)+'</span>':'')+
+        (o.department?'<span class="tag tag-dep">'+di+' '+esc(o.department)+'</span>':'')+
+        (o.paymentMethod?'<span class="tag tag-pay">'+pi+' '+esc(o.paymentMethod)+'</span>':'')+
+        '</div></div>';
     }).join('');
   });
 }
-
 function showDetail(id){
-  const o=S.orders.find(x=>x.id===id);if(!o)return;
-  const days=Math.floor((Date.now()-o.createdAt)/86400000);
-  const rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
-  const pi=o.paymentMethod?(PI[o.paymentMethod]||'💰')+' ':'';
-  const di=o.department==='Judaica'?'✡️':'📚';
-  document.getElementById('detailContent').innerHTML=`
-    <div class="modal-header"><h2>📖 Order Detail</h2><button class="btn btn-secondary btn-sm" onclick="closeModal('orderDetailModal')">✕</button></div>
-    <div style="background:#f8f9fa;padding:13px;border-radius:8px;margin-bottom:12px">
-      <div class="detail-grid">
-        <div><strong>Customer</strong>${esc(o.customerName)}</div><div><strong>Phone</strong>${esc(o.customerPhone)}</div>
-        <div><strong>Email</strong>${esc(o.customerEmail)||'—'}</div><div><strong>Assigned</strong>${esc(o.assignedWorker)||'—'}</div>
-        <div><strong>Book</strong>${esc(o.bookTitle)}</div><div><strong>Department</strong>${o.department?di+' '+esc(o.department):'—'}</div>
-        <div><strong>Supplier</strong>${esc(o.supplier)||'—'}</div><div><strong>Expected</strong>${o.expectedArrival||'—'}</div>
-        <div><strong>Days open</strong>${days} day${days!==1?'s':''}</div><div><strong>Status</strong><span class="badge badge-${o.status}">${SL[o.status]}</span></div>
-      </div>
-    </div>
-    <div style="background:#fef9e7;border-radius:8px;padding:12px;margin-bottom:12px">
-      <div style="font-weight:700;font-size:.8em;color:#888;margin-bottom:7px">💳 PAYMENT</div>
-      <div class="detail-grid">
-        <div><strong>Method</strong>${o.paymentMethod?pi+esc(o.paymentMethod):'—'}</div>
-        <div><strong>Deposit</strong>${o.deposit?'$ '+esc(o.deposit):'—'}</div>
-        <div><strong>Total</strong>${o.price?'$ '+esc(o.price):'—'}</div>
-        <div><strong>Balance</strong>${(o.price&&parseFloat(rem)>0)?'<span style="color:#e74c3c;font-weight:700">$ '+rem+'</span>':'<span style="color:#27ae60">✅ Paid</span>'}</div>
-      </div>
-    </div>
-    ${o.notes?`<div style="font-size:.85em;margin-bottom:10px"><strong>📝 Notes:</strong> ${esc(o.notes)}</div>`:''}
-    <div class="action-btn-group">
-      ${NB[o.status]?`<button class="btn btn-success" onclick="advanceOrder('${o.id}')">${NB[o.status]}</button>`:''}
-      ${o.status!=='done'&&o.status!=='unavailable'?`<button class="btn btn-danger btn-sm" onclick="markUnavailable('${o.id}')">❌ Not Available</button>`:''}
-      ${o.status==='arrived'?`<button class="btn btn-wa btn-sm" onclick="reNotify('${o.id}')">📬 Re-Notify</button>`:''}
-      <button class="btn btn-warning btn-sm" onclick="reassignOrder('${o.id}')">👤 Reassign</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">🗑️ Delete</button>
-    </div>
-    <div style="margin-top:18px"><strong style="font-size:.88em">📋 History</strong>
-      <div style="margin-top:7px">${(o.history||[]).slice().reverse().map(h=>`<div class="history-item"><div class="history-status">${SL[h.status]||h.status}</div><div class="history-meta">${h.worker?'👤 '+esc(h.worker)+' · ':''}📅 ${new Date(h.ts).toLocaleString()}${h.note?' · '+esc(h.note):''}</div></div>`).join('')}</div>
-    </div>`;
+  var o=S.orders.find(function(x){return x.id===id;});if(!o)return;
+  var days=Math.floor((Date.now()-o.createdAt)/86400000);
+  var rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
+  var pi=o.paymentMethod?((PI[o.paymentMethod]||'')+' '):'';
+  var di=o.department==='Judaica'?'✡️':'📚';
+  document.getElementById('detailContent').innerHTML=
+    '<div class="modal-header"><h2>Order Detail</h2><button class="btn btn-secondary btn-sm" onclick="closeModal(\'orderDetailModal\')">X</button></div>'+
+    '<div style="background:#f8f9fa;padding:13px;border-radius:8px;margin-bottom:12px">'+
+    '<div class="detail-grid">'+
+    '<div><strong>Customer</strong>'+esc(o.customerName)+'</div><div><strong>Phone</strong>'+esc(o.customerPhone)+'</div>'+
+    '<div><strong>Email</strong>'+(esc(o.customerEmail)||'—')+'</div><div><strong>Assigned</strong>'+(esc(o.assignedWorker)||'—')+'</div>'+
+    '<div><strong>Book</strong>'+esc(o.bookTitle)+'</div><div><strong>Dept</strong>'+(o.department?di+' '+esc(o.department):'—')+'</div>'+
+    '<div><strong>Supplier</strong>'+(esc(o.supplier)||'—')+'</div><div><strong>Expected</strong>'+(o.expectedArrival||'—')+'</div>'+
+    '<div><strong>Days open</strong>'+days+'</div><div><strong>Status</strong><span class="badge badge-'+o.status+'">'+SL[o.status]+'</span></div>'+
+    '</div></div>'+
+    '<div style="background:#fef9e7;border-radius:8px;padding:12px;margin-bottom:12px">'+
+    '<div style="font-weight:700;font-size:.8em;color:#888;margin-bottom:7px">PAYMENT</div>'+
+    '<div class="detail-grid">'+
+    '<div><strong>Method</strong>'+(o.paymentMethod?pi+esc(o.paymentMethod):'—')+'</div>'+
+    '<div><strong>Deposit</strong>'+(o.deposit?'$'+esc(o.deposit):'—')+'</div>'+
+    '<div><strong>Total</strong>'+(o.price?'$'+esc(o.price):'—')+'</div>'+
+    '<div><strong>Balance</strong>'+(o.price&&parseFloat(rem)>0?'<span style="color:#e74c3c;font-weight:700">$'+rem+'</span>':'<span style="color:#27ae60">Paid</span>')+'</div>'+
+    '</div></div>'+
+    (o.notes?'<div style="font-size:.85em;margin-bottom:10px"><strong>Notes:</strong> '+esc(o.notes)+'</div>':'')+
+    '<div class="action-btn-group">'+
+    (NB[o.status]?'<button class="btn btn-success" onclick="advanceOrder(\''+o.id+'\')">'+NB[o.status]+'</button>':'')+
+    (o.status!=='done'&&o.status!=='unavailable'?'<button class="btn btn-danger btn-sm" onclick="markUnavailable(\''+o.id+'\')">Not Available</button>':'')+
+    (o.status==='arrived'?'<button class="btn btn-wa btn-sm" onclick="reNotify(\''+o.id+'\')">Re-Notify</button>':'')+
+    '<button class="btn btn-warning btn-sm" onclick="reassignOrder(\''+o.id+'\')">Reassign</button>'+
+    '<button class="btn btn-danger btn-sm" onclick="deleteOrder(\''+o.id+'\')">Delete</button>'+
+    '</div>'+
+    '<div style="margin-top:18px"><strong style="font-size:.88em">History</strong>'+
+    '<div style="margin-top:7px">'+((o.history||[]).slice().reverse().map(function(h){return '<div class="history-item"><div class="history-status">'+(SL[h.status]||h.status)+'</div><div class="history-meta">'+(h.worker?'Worker: '+esc(h.worker)+' - ':'')+new Date(h.ts).toLocaleString()+(h.note?' - '+esc(h.note):'')+'</div></div>';}).join(''))+'</div></div>';
   openModal('orderDetailModal');
 }
-
-function reNotify(id){const o=S.orders.find(x=>x.id===id);if(o)openNotifyModal(o,'arrived');}
-function clearNewForm(){['fName','fPhone','fEmail','fBook','fPrice','fSupplier','fNotes','fDeposit','custSearch'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('fArrival').value='';document.getElementById('fWorker').value='';document.getElementById('fPayMethod').value='';document.getElementById('fDept').value='';document.getElementById('bookList').style.display='none';document.getElementById('custList').style.display='none';_selCustId=null;}
+function reNotify(id){var o=S.orders.find(function(x){return x.id===id;});if(o)openNotifyModal(o,'arrived');}
+function clearNewForm(){['fName','fPhone','fEmail','fBook','fPrice','fSupplier','fNotes','fDeposit','custSearch'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});document.getElementById('fArrival').value='';document.getElementById('fWorker').value='';document.getElementById('fPayMethod').value='';document.getElementById('fDept').value='';document.getElementById('bookList').style.display='none';document.getElementById('custList').style.display='none';_selCustId=null;}
 function openModal(id){
   if(id==='settingsModal'){document.getElementById('sWorkers').value=S.workers.join('\n');document.getElementById('sShopName').value=S.shopName||'';document.getElementById('sShopPhone').value=S.shopPhone||'';document.getElementById('sNewPass').value='';document.getElementById('sErplyCC').value=S.erplyCC||'';document.getElementById('sErplyUser').value=S.erplyUser||'';document.getElementById('sErplyPass').value=S.erplyPass||'';}
   if(id==='newOrderModal'){clearNewForm();renderAll();}
@@ -518,14 +448,13 @@ function openModal(id){
 }
 function closeModal(id){document.getElementById(id).classList.remove('active');}
 function changeWorker(){S.currentWorker=document.getElementById('workerSelect').value;saveLocal();renderAll();}
-function notify(msg,type='success'){const el=document.getElementById('notification');el.textContent=msg;el.className=`notification show${type==='error'?' error':type==='info'?' info':''}`;setTimeout(()=>el.classList.remove('show'),3500);}
+function notify(msg,type){var el=document.getElementById('notification');el.textContent=msg;el.className='notification show'+(type==='error'?' error':type==='info'?' info':'');setTimeout(function(){el.classList.remove('show');},3500);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
 loadLocal();
 if(S.loggedIn){document.getElementById('loginScreen').classList.remove('active');startListeners();}
 else{document.getElementById('loginScreen').classList.add('active');initLogin();}
-document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('active');});});
-document.addEventListener('click',e=>{if(!e.target.closest('#custSearch')&&!e.target.closest('#custList'))document.getElementById('custList').style.display='none';if(!e.target.closest('#fBook')&&!e.target.closest('#bookList'))document.getElementById('bookList').style.display='none';});
+document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('active');});});
+document.addEventListener('click',function(e){if(!e.target.closest('#custSearch')&&!e.target.closest('#custList'))document.getElementById('custList').style.display='none';if(!e.target.closest('#fBook')&&!e.target.closest('#bookList'))document.getElementById('bookList').style.display='none';});
 </script>
 </body>
 </html>
