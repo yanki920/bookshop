@@ -124,7 +124,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
   <button class="btn-icon" onclick="openModal('settingsModal')">⚙️</button>
 </div>
 <div class="pipeline">
-  <div class="column col-new"><div class="column-header">🆕 New <span class="count-badge" id="cnt-new">0</span></div><div id="cards-new"></div></div>
+  <div class="column col-new"><div class="column-header">🆕 New  <span class="count-badge" id="cnt-new">0</span></div><div id="cards-new"></div></div>
   <div class="column col-ordered"><div class="column-header">📦 Ordered <span class="count-badge" id="cnt-ordered">0</span></div><div id="cards-ordered"></div></div>
   <div class="column col-arrived"><div class="column-header">🚚 Arrived <span class="count-badge" id="cnt-arrived">0</span></div><div id="cards-arrived"></div></div>
   <div class="column col-called"><div class="column-header">📞 Called <span class="count-badge" id="cnt-called">0</span></div><div id="cards-called"></div></div>
@@ -230,7 +230,6 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
   </div>
 </div>
 <script>
-
 const firebaseConfig={apiKey:"AIzaSyBprW8gvfVWcI0JtjYmN952B-oscdmAEc0",authDomain:"bookshop-orders.firebaseapp.com",projectId:"bookshop-orders",storageBucket:"bookshop-orders.firebasestorage.app",messagingSenderId:"355881664186",appId:"1:355881664186:web:022156c2134e240cce4c83"};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
@@ -241,23 +240,35 @@ const NB={new:'📦 Mark as Ordered',ordered:'🚚 Mark as Arrived',arrived:'�
 const PI={Cash:'💵','Credit Card':'💳','Bank Transfer':'🏦',Other:'🔄'};
 let S={loggedIn:false,currentWorker:'',orders:[],erplyCC:'',erplyUser:'',erplyPass:'',workers:['Worker 1','Worker 2','Worker 3','Worker 4','Worker 5'],shopName:'Our Bookshop',shopPhone:'',shopPassword:null,filter:'all'};
 let _uo=null,_us=null,_isFirst=false,_ctTimer=null,_bkTimer=null,_selCustId=null,_erplySK=null,_erplySKExp=0;
-function saveLocal(){localStorage.setItem('bom_v9',JSON.stringify({loggedIn:S.loggedIn,currentWorker:S.currentWorker}));}
-function loadLocal(){try{const p=JSON.parse(localStorage.getItem('bom_v9')||'{}');S.loggedIn=p.loggedIn||false;S.currentWorker=p.currentWorker||'';}catch(e){}}
+function saveLocal(){localStorage.setItem('bom_v10',JSON.stringify({loggedIn:S.loggedIn,currentWorker:S.currentWorker}));}
+function loadLocal(){try{var p=JSON.parse(localStorage.getItem('bom_v10')||'{}');S.loggedIn=p.loggedIn||false;S.currentWorker=p.currentWorker||'';}catch(e){}}
 function startListeners(){
-  _uo=db.collection('orders').onSnapshot(snap=>{S.orders=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();document.getElementById('syncBadge').textContent='🟢 Live';document.getElementById('syncBadge').className='sync-badge sync-live';},()=>{document.getElementById('syncBadge').textContent='🔴 Offline';document.getElementById('syncBadge').className='sync-badge sync-off';});
-  _us=db.collection('settings').doc('config').onSnapshot(doc=>{if(doc.exists){const d=doc.data();S.workers=d.workers||S.workers;S.shopName=d.shopName||S.shopName;S.shopPhone=d.shopPhone||S.shopPhone;S.shopPassword=d.shopPassword||S.shopPassword;S.erplyCC=d.erplyCC||'';S.erplyUser=d.erplyUser||'';S.erplyPass=d.erplyPass||'';document.getElementById('headerTitle').textContent=S.shopName;renderAll();}});
+  _uo=db.collection('orders').onSnapshot(function(snap){S.orders=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});renderAll();document.getElementById('syncBadge').textContent='🟢 Live';document.getElementById('syncBadge').className='sync-badge sync-live';},function(){document.getElementById('syncBadge').textContent='🔴 Offline';document.getElementById('syncBadge').className='sync-badge sync-off';});
+  _us=db.collection('settings').doc('config').onSnapshot(function(doc){if(doc.exists){var d=doc.data();S.workers=d.workers||S.workers;S.shopName=d.shopName||S.shopName;S.shopPhone=d.shopPhone||S.shopPhone;S.shopPassword=d.shopPassword||S.shopPassword;S.erplyCC=d.erplyCC||'';S.erplyUser=d.erplyUser||'';S.erplyPass=d.erplyPass||'';document.getElementById('headerTitle').textContent=S.shopName;renderAll();}});
 }
 function stopListeners(){if(_uo){_uo();_uo=null;}if(_us){_us();_us=null;}}
-async function initLogin(){try{const doc=await db.collection('settings').doc('config').get();if(!doc.exists||!doc.data().shopPassword){_isFirst=true;document.getElementById('setupNote').style.display='block';document.getElementById('confirmGrp').style.display='block';document.getElementById('loginBtn').textContent='Create Password & Enter';document.getElementById('loginSubtitle').textContent='First time — create your shop password';}}catch(e){}}
+async function initLogin(){
+  try{
+    var doc=await db.collection('settings').doc('config').get();
+    if(!doc.exists||!doc.data().shopPassword){
+      _isFirst=true;
+      document.getElementById('setupNote').style.display='block';
+      document.getElementById('confirmGrp').style.display='block';
+      document.getElementById('loginBtn').textContent='Create Password & Enter';
+      document.getElementById('loginSubtitle').textContent='First time — create your shop password';
+    }
+  }catch(e){}
+}
 async function doLogin(){
-  const err=document.getElementById('loginErr'),btn=document.getElementById('loginBtn');
-  err.textContent='';const pw=document.getElementById('loginPw').value.trim();
+  var err=document.getElementById('loginErr'),btn=document.getElementById('loginBtn');
+  err.textContent='';
+  var pw=document.getElementById('loginPw').value.trim();
   if(!pw){err.textContent='Please enter a password.';return;}
   btn.innerHTML='<span class="loader"></span> Checking...';btn.disabled=true;
   try{
-    const doc=await db.collection('settings').doc('config').get();
+    var doc=await db.collection('settings').doc('config').get();
     if(!doc.exists||!doc.data().shopPassword){
-      const pw2=document.getElementById('loginPw2').value.trim();
+      var pw2=document.getElementById('loginPw2').value.trim();
       if(pw!==pw2){err.textContent='Passwords do not match!';btn.innerHTML='Create Password & Enter';btn.disabled=false;return;}
       await db.collection('settings').doc('config').set({shopPassword:pw,workers:S.workers,shopName:'Our Bookshop',shopPhone:'',erplyCC:'',erplyUser:'',erplyPass:''},{merge:true});
       S.loggedIn=true;saveLocal();document.getElementById('loginScreen').classList.remove('active');startListeners();notify('Password created! Welcome!');
@@ -269,78 +280,78 @@ async function doLogin(){
   btn.innerHTML=_isFirst?'Create Password & Enter':'Enter';btn.disabled=false;
 }
 async function getErplySession(){
-  const cc=S.erplyCC,un=S.erplyUser,pw=S.erplyPass;
+  var cc=S.erplyCC,un=S.erplyUser,pw=S.erplyPass;
   if(!cc||!un||!pw)return null;
-  if(_erplySK&&Date.now()<_erplySKExp)return{sk:_erplySK,cc};
+  if(_erplySK&&Date.now()<_erplySKExp)return{sk:_erplySK,cc:cc};
   try{
-    const r=await fetch('/.netlify/functions/erply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request:'verifyUser',clientCode:cc,username:un,password:pw})});
-    const d=await r.json();
-    if(d.status&&d.status.responseStatus==='ok'){_erplySK=d.records[0].sessionKey;_erplySKExp=Date.now()+3500000;return{sk:_erplySK,cc};}
+    var r=await fetch('/.netlify/functions/erply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request:'verifyUser',clientCode:cc,username:un,password:pw})});
+    var d=await r.json();
+    if(d.status&&d.status.responseStatus==='ok'){_erplySK=d.records[0].sessionKey;_erplySKExp=Date.now()+3500000;return{sk:_erplySK,cc:cc};}
   }catch(e){}return null;
 }
 async function erplyCall(params){
-  const s=await getErplySession();if(!s)return null;
+  var s=await getErplySession();if(!s)return null;
   try{
-    const r=await fetch('/.netlify/functions/erply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},params,{clientCode:s.cc,sessionKey:s.sk}))});
+    var body=Object.assign({},params,{clientCode:s.cc,sessionKey:s.sk});
+    var r=await fetch('/.netlify/functions/erply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     return await r.json();
   }catch(e){return null;}
 }
-}
 function searchCustomers(){
-  const q=document.getElementById('custSearch').value.trim(),list=document.getElementById('custList');
+  var q=document.getElementById('custSearch').value.trim(),list=document.getElementById('custList');
   if(q.length<2){list.style.display='none';return;}
   clearTimeout(_ctTimer);
   _ctTimer=setTimeout(async function(){
-    const data=await erplyCall({request:'getCustomers',searchName:q,recordsOnPage:'8'});
+    var data=await erplyCall({request:'getCustomers',searchName:q,recordsOnPage:'8'});
     list.innerHTML='';
     if(data&&data.records&&data.records.length>0){
-      data.records.forEach(function(c){const d=document.createElement('div');d.className='ac-item';d.textContent=(c.fullName||'')+(c.phone?' - '+c.phone:'')+(c.email?' - '+c.email:'');d.onclick=function(){document.getElementById('fName').value=c.fullName||'';document.getElementById('fPhone').value=c.phone||'';document.getElementById('fEmail').value=c.email||'';document.getElementById('custSearch').value=c.fullName||'';_selCustId=c.id;list.style.display='none';};list.appendChild(d);});list.style.display='block';
+      data.records.forEach(function(c){var d=document.createElement('div');d.className='ac-item';d.textContent=(c.fullName||'')+(c.phone?' - '+c.phone:'')+(c.email?' - '+c.email:'');d.onclick=function(){document.getElementById('fName').value=c.fullName||'';document.getElementById('fPhone').value=c.phone||'';document.getElementById('fEmail').value=c.email||'';document.getElementById('custSearch').value=c.fullName||'';_selCustId=c.id;list.style.display='none';};list.appendChild(d);});list.style.display='block';
     }else{list.innerHTML='<div class="ac-item" style="color:#aaa">No match — fill manually</div>';list.style.display='block';_selCustId=null;}
   },400);
 }
 function searchBooks(){
-  const q=document.getElementById('fBook').value.trim(),list=document.getElementById('bookList');
+  var q=document.getElementById('fBook').value.trim(),list=document.getElementById('bookList');
   if(q.length<2){list.style.display='none';return;}
   clearTimeout(_bkTimer);
   _bkTimer=setTimeout(async function(){
-    const data=await erplyCall({request:'getProducts',searchName:q,recordsOnPage:'8'});
+    var data=await erplyCall({request:'getProducts',searchName:q,recordsOnPage:'8'});
     list.innerHTML='';
     if(data&&data.records&&data.records.length>0){
-      data.records.forEach(function(p){const d=document.createElement('div');d.className='ac-item';const price=p.price||(p.priceListPrices&&p.priceListPrices[0]?p.priceListPrices[0].price:'');d.textContent=(p.name||'')+(price?' - $'+price:'');d.onclick=function(){document.getElementById('fBook').value=p.name||'';if(price)document.getElementById('fPrice').value=price;list.style.display='none';};list.appendChild(d);});list.style.display='block';
+      data.records.forEach(function(p){var d=document.createElement('div');d.className='ac-item';var price=p.price||(p.priceListPrices&&p.priceListPrices[0]?p.priceListPrices[0].price:'');d.textContent=(p.name||'')+(price?' - $'+price:'');d.onclick=function(){document.getElementById('fBook').value=p.name||'';if(price)document.getElementById('fPrice').value=price;list.style.display='none';};list.appendChild(d);});list.style.display='block';
     }else{list.innerHTML='<div class="ac-item" style="color:#aaa">No match — type manually</div>';list.style.display='block';}
   },400);
 }
 async function saveNewOrder(){
-  const name=document.getElementById('fName').value.trim(),phone=document.getElementById('fPhone').value.trim(),book=document.getElementById('fBook').value.trim();
-  if(!name||!phone||!book){notify('Fill in: Name, Phone & Book','error');return;}
-  const btn=document.getElementById('saveOrderBtn');btn.disabled=true;btn.innerHTML='<span class="loader"></span>';
-  const o={customerName:name,customerPhone:phone,customerEmail:document.getElementById('fEmail').value.trim(),erplyCustId:_selCustId||null,bookTitle:book,price:document.getElementById('fPrice').value.trim(),department:document.getElementById('fDept').value,supplier:document.getElementById('fSupplier').value.trim(),expectedArrival:document.getElementById('fArrival').value,assignedWorker:document.getElementById('fWorker').value,paymentMethod:document.getElementById('fPayMethod').value,deposit:document.getElementById('fDeposit').value.trim(),notes:document.getElementById('fNotes').value.trim(),status:'new',createdAt:Date.now(),updatedAt:Date.now(),history:[{status:'new',worker:S.currentWorker,ts:Date.now(),note:'Order created'}]};
+  var name=document.getElementById('fName').value.trim(),phone=document.getElementById('fPhone').value.trim(),book=document.getElementById('fBook').value.trim();
+  if(!name||!phone||!book){notify('Fill in: Name, Phone and Book','error');return;}
+  var btn=document.getElementById('saveOrderBtn');btn.disabled=true;btn.innerHTML='<span class="loader"></span>';
+  var o={customerName:name,customerPhone:phone,customerEmail:document.getElementById('fEmail').value.trim(),erplyCustId:_selCustId||null,bookTitle:book,price:document.getElementById('fPrice').value.trim(),department:document.getElementById('fDept').value,supplier:document.getElementById('fSupplier').value.trim(),expectedArrival:document.getElementById('fArrival').value,assignedWorker:document.getElementById('fWorker').value,paymentMethod:document.getElementById('fPayMethod').value,deposit:document.getElementById('fDeposit').value.trim(),notes:document.getElementById('fNotes').value.trim(),status:'new',createdAt:Date.now(),updatedAt:Date.now(),history:[{status:'new',worker:S.currentWorker,ts:Date.now(),note:'Order created'}]};
   try{await db.collection('orders').add(o);closeModal('newOrderModal');clearNewForm();notify('Order saved!');}catch(e){notify('Error: '+e.message,'error');}
   btn.disabled=false;btn.innerHTML='Save Order';
 }
 async function advanceOrder(id){
-  const o=S.orders.find(function(x){return x.id===id;});if(!o||!NEXT[o.status])return;
-  const ns=NEXT[o.status];
-  const nh=(o.history||[]).concat([{status:ns,worker:S.currentWorker,ts:Date.now(),note:'Moved to: '+SL[ns]}]);
+  var o=S.orders.find(function(x){return x.id===id;});if(!o||!NEXT[o.status])return;
+  var ns=NEXT[o.status];
+  var nh=(o.history||[]).concat([{status:ns,worker:S.currentWorker,ts:Date.now(),note:'Moved to: '+SL[ns]}]);
   try{await db.collection('orders').doc(id).update({status:ns,updatedAt:Date.now(),history:nh});closeModal('orderDetailModal');notify(SL[ns]);if(ns==='arrived'){openNotifyModal(o,'arrived');}}catch(e){notify('Error','error');}
 }
 async function markUnavailable(id){
-  const o=S.orders.find(function(x){return x.id===id;});if(!o)return;
+  var o=S.orders.find(function(x){return x.id===id;});if(!o)return;
   if(!confirm('Mark as NOT AVAILABLE?'))return;
-  const nh=(o.history||[]).concat([{status:'unavailable',worker:S.currentWorker,ts:Date.now(),note:'Marked as not available'}]);
+  var nh=(o.history||[]).concat([{status:'unavailable',worker:S.currentWorker,ts:Date.now(),note:'Marked as not available'}]);
   try{await db.collection('orders').doc(id).update({status:'unavailable',updatedAt:Date.now(),history:nh});closeModal('orderDetailModal');notify('Marked as Not Available');openNotifyModal(o,'unavailable');}catch(e){notify('Error','error');}
 }
 async function deleteOrder(id){if(!confirm('Delete this order?'))return;try{await db.collection('orders').doc(id).delete();closeModal('orderDetailModal');notify('Deleted');}catch(e){notify('Error','error');}}
 async function reassignOrder(id){
-  const o=S.orders.find(function(x){return x.id===id;});if(!o)return;
-  const w=prompt('Assign to worker:\n\n'+S.workers.join('\n'));
+  var o=S.orders.find(function(x){return x.id===id;});if(!o)return;
+  var w=prompt('Assign to worker:\n\n'+S.workers.join('\n'));
   if(w&&w.trim()){try{await db.collection('orders').doc(id).update({assignedWorker:w.trim(),updatedAt:Date.now()});notify('Reassigned!');showDetail(id);}catch(e){notify('Error','error');}}
 }
 function buildMsg(o,type){
-  const shop=S.shopName||'Our Bookshop',ph=S.shopPhone?'\nCall us: '+S.shopPhone:'';
+  var shop=S.shopName||'Our Bookshop',ph=S.shopPhone?'\nCall us: '+S.shopPhone:'';
   if(type==='unavailable')return 'Dear '+o.customerName+',\n\nWe are sorry — the book you ordered is not available:\n\n'+o.bookTitle+'\n\nWe apologize for the inconvenience.'+ph+'\n'+shop;
-  const rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
-  const bal=(o.price&&parseFloat(rem)>0)?'\nRemaining: $'+rem:'';
+  var rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
+  var bal=(o.price&&parseFloat(rem)>0)?'\nRemaining: $'+rem:'';
   return 'Dear '+o.customerName+',\n\nYour book has arrived and is ready for pickup!\n\n'+o.bookTitle+(o.price?'\nPrice: $'+o.price:'')+(o.deposit?'\nDeposit: $'+o.deposit:'')+bal+'\n\nSee you soon!'+ph+'\n'+shop;
 }
 function openNotifyModal(o,type){
@@ -352,7 +363,7 @@ function openNotifyModal(o,type){
   openModal('notifyModal');
 }
 function doNotify(type){
-  const msg=document.getElementById('notifyMsg').value,phone=document.getElementById('notifyPhone').value.trim(),email=document.getElementById('notifyEmail').value.trim();
+  var msg=document.getElementById('notifyMsg').value,phone=document.getElementById('notifyPhone').value.trim(),email=document.getElementById('notifyEmail').value.trim();
   if(type==='wa'){window.open('https://wa.me/'+phone.replace(/[^0-9+]/g,'')+'?text='+encodeURIComponent(msg),'_blank');notify('WhatsApp opened!','info');}
   else if(type==='sms'){window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);notify('SMS opened!','info');}
   else if(type==='email'){window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Update on your book order')+'&body='+encodeURIComponent(msg);notify('Email opened!','info');}
@@ -367,15 +378,14 @@ async function saveSettings(){
   S.erplyCC=document.getElementById('sErplyCC').value.trim();
   S.erplyUser=document.getElementById('sErplyUser').value.trim();
   S.erplyPass=document.getElementById('sErplyPass').value.trim();
-  const np=document.getElementById('sNewPass').value.trim();
-  const u={workers:S.workers,shopName:S.shopName,shopPhone:S.shopPhone,erplyCC:S.erplyCC,erplyUser:S.erplyUser,erplyPass:S.erplyPass};
+  var np=document.getElementById('sNewPass').value.trim();
+  var u={workers:S.workers,shopName:S.shopName,shopPhone:S.shopPhone,erplyCC:S.erplyCC,erplyUser:S.erplyUser,erplyPass:S.erplyPass};
   if(np)u.shopPassword=np;
   _erplySK=null;_erplySKExp=0;
   try{await db.collection('settings').doc('config').set(u,{merge:true});closeModal('settingsModal');notify('Settings saved!');}catch(e){notify('Error saving','error');}
 }
-function doLogout(){if(!confirm('Log out?'))return;stopListeners();S.loggedIn=false;saveLocal();closeModal('settingsModal');document.getElementById('loginScreen').classList.add('active');_isFirst=false;document.getElementById('setupNote').style.display='none';document.getElementById('confirmGrp').style.display='none';document.getElementById('loginBtn').textContent='Enter';initLogin();}
-function renderAll(){
-  const search=(document.getElementById('globalSearch')?document.getElementById('globalSearch').value:'').toLowerCase();
+function doLogout(){if(!confirm('Log out?'))return;stopListeners();S.loggedIn=false;saveLocal();closeModal('settingsModal');document.getElementById('loginScreen').classList.add('active');_isFirst=false;document.getElementById('setupNote').style.display='none';document.getElementById('confirmGrp').style.display='none';document.getElementById('loginBtn').textContent='Enter';initLogin();} function renderAll(){
+  var search=(document.getElementById('globalSearch')?document.getElementById('globalSearch').value:'').toLowerCase();
   document.getElementById('workerSelect').innerHTML='<option value="">Who am I?</option>'+S.workers.map(function(w){return '<option value="'+esc(w)+'"'+(S.currentWorker===w?' selected':'')+'>'+esc(w)+'</option>';}).join('');
   document.getElementById('fWorker').innerHTML='<option value="">Assign...</option>'+S.workers.map(function(w){return '<option>'+esc(w)+'</option>';}).join('');
   STATUSES.forEach(function(st){
@@ -451,8 +461,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 loadLocal();
 if(S.loggedIn){document.getElementById('loginScreen').classList.remove('active');startListeners();}
 else{document.getElementById('loginScreen').classList.add('active');initLogin();}
-document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('active');});});
-document.addEventListener('click',function(e){if(!e.target.closest('#custSearch')&&!e.target.closest('#custList'))document.getElementById('custList').style.display='none';if(!e.target.closest('#fBook')&&!e.target.closest('#bookList'))document.getElementById('bookList').style.display='none';});
+document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('active');});}); document.addEventListener('click',function(e){if(!e.target.closest('#custSearch')&&!e.target.closest('#custList'))document.getElementById('custList').style.display='none';if(!e.target.closest('#fBook')&&!e.target.closest('#bookList'))document.getElementById('bookList').style.display='none';});
 </script>
 </body>
 </html>
