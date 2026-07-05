@@ -230,7 +230,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
   </div>
 </div>
 <script>
-const PROXY='https://corsproxy.io/?';
+
 const firebaseConfig={apiKey:"AIzaSyBprW8gvfVWcI0JtjYmN952B-oscdmAEc0",authDomain:"bookshop-orders.firebaseapp.com",projectId:"bookshop-orders",storageBucket:"bookshop-orders.firebasestorage.app",messagingSenderId:"355881664186",appId:"1:355881664186:web:022156c2134e240cce4c83"};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
@@ -273,8 +273,7 @@ async function getErplySession(){
   if(!cc||!un||!pw)return null;
   if(_erplySK&&Date.now()<_erplySKExp)return{sk:_erplySK,cc};
   try{
-    const target='https://'+cc+'.erply.com/api/?request=verifyUser&clientCode='+cc+'&username='+encodeURIComponent(un)+'&password='+encodeURIComponent(pw);
-    const r=await fetch(PROXY+target);
+    const r=await fetch('/.netlify/functions/erply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request:'verifyUser',clientCode:cc,username:un,password:pw})});
     const d=await r.json();
     if(d.status&&d.status.responseStatus==='ok'){_erplySK=d.records[0].sessionKey;_erplySKExp=Date.now()+3500000;return{sk:_erplySK,cc};}
   }catch(e){}return null;
@@ -282,11 +281,10 @@ async function getErplySession(){
 async function erplyCall(params){
   const s=await getErplySession();if(!s)return null;
   try{
-    const p=new URLSearchParams(Object.assign({},params,{clientCode:s.cc,sessionKey:s.sk}));
-    const target='https://'+s.cc+'.erply.com/api/?'+p.toString();
-    const r=await fetch(PROXY+target);
+    const r=await fetch('/.netlify/functions/erply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},params,{clientCode:s.cc,sessionKey:s.sk}))});
     return await r.json();
   }catch(e){return null;}
+}
 }
 function searchCustomers(){
   const q=document.getElementById('custSearch').value.trim(),list=document.getElementById('custList');
