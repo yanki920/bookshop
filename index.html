@@ -124,7 +124,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
   <button class="btn-icon" onclick="openModal('settingsModal')">⚙️</button>
 </div>
 <div class="pipeline">
-  <div class="column col-new"><div class="column-header">🆕 New  <span class="count-badge" id="cnt-new">0</span></div><div id="cards-new"></div></div>
+  <div class="column col-new"><div class="column-header">🆕 New <span class="count-badge" id="cnt-new">0</span></div><div id="cards-new"></div></div>
   <div class="column col-ordered"><div class="column-header">📦 Ordered <span class="count-badge" id="cnt-ordered">0</span></div><div id="cards-ordered"></div></div>
   <div class="column col-arrived"><div class="column-header">🚚 Arrived <span class="count-badge" id="cnt-arrived">0</span></div><div id="cards-arrived"></div></div>
   <div class="column col-called"><div class="column-header">📞 Called <span class="count-badge" id="cnt-called">0</span></div><div id="cards-called"></div></div>
@@ -155,6 +155,10 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
       <div class="ac-list" id="bookList"></div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label>Erply Product Code</label><input type="text" id="fProductCode" placeholder="Auto-filled from Erply" style="background:#f8f9fa"/></div>
+      <div class="form-group"><label>Price incl. VAT (€)</label><input type="number" id="fPrice" placeholder="0.00" step="0.01" min="0"/></div>
+    </div>
+    <div class="form-row">
       <div class="form-group">
         <label>Department *</label>
         <select id="fDept">
@@ -163,12 +167,9 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
           <option value="Judaica">✡️ Judaica</option>
         </select>
       </div>
-      <div class="form-group"><label>Price ($)</label><input type="number" id="fPrice" placeholder="0.00" step="0.01" min="0"/></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Supplier</label><input type="text" id="fSupplier" placeholder="Supplier name"/></div>
       <div class="form-group"><label>Expected Arrival</label><input type="date" id="fArrival"/></div>
     </div>
+    <div class="form-group"><label>Supplier</label><input type="text" id="fSupplier" placeholder="Supplier name"/></div>
     <hr class="divider">
     <div style="font-weight:600;font-size:.83em;color:#555;margin-bottom:10px">💳 Payment</div>
     <div class="form-row">
@@ -182,7 +183,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
           <option value="Other">🔄 Other</option>
         </select>
       </div>
-      <div class="form-group"><label>Deposit Paid ($)</label><input type="number" id="fDeposit" placeholder="0.00" step="0.01" min="0"/></div>
+      <div class="form-group"><label>Deposit Paid (€)</label><input type="number" id="fDeposit" placeholder="0.00" step="0.01" min="0"/></div>
     </div>
     <hr class="divider">
     <div class="form-group"><label>Assign to Worker</label><select id="fWorker"></select></div>
@@ -215,7 +216,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
   <div class="modal">
     <div class="modal-header"><h2>⚙️ Settings</h2><button class="btn btn-secondary btn-sm" onclick="closeModal('settingsModal')">✕</button></div>
     <div class="form-group"><label>Shop Name</label><input type="text" id="sShopName" placeholder="e.g. Tiferes Judaica"/></div>
-    <div class="form-group"><label>Shop Phone</label><input type="text" id="sShopPhone" placeholder="e.g. +1 555-0000"/></div>
+    <div class="form-group"><label>Shop Phone</label><input type="text" id="sShopPhone" placeholder="e.g. +32 555-0000"/></div>
     <div class="form-group"><label>Workers — one name per line</label><textarea id="sWorkers" style="height:110px"></textarea></div>
     <div class="form-group"><label>Change Password (leave empty to keep current)</label><input type="password" id="sNewPass" placeholder="New password…"/></div>
     <hr class="divider">
@@ -240,8 +241,8 @@ const NB={new:'📦 Mark as Ordered',ordered:'🚚 Mark as Arrived',arrived:'�
 const PI={Cash:'💵','Credit Card':'💳','Bank Transfer':'🏦',Other:'🔄'};
 let S={loggedIn:false,currentWorker:'',orders:[],erplyCC:'',erplyUser:'',erplyPass:'',workers:['Worker 1','Worker 2','Worker 3','Worker 4','Worker 5'],shopName:'Our Bookshop',shopPhone:'',shopPassword:null,filter:'all'};
 let _uo=null,_us=null,_isFirst=false,_ctTimer=null,_bkTimer=null,_selCustId=null,_erplySK=null,_erplySKExp=0;
-function saveLocal(){localStorage.setItem('bom_v10',JSON.stringify({loggedIn:S.loggedIn,currentWorker:S.currentWorker}));}
-function loadLocal(){try{var p=JSON.parse(localStorage.getItem('bom_v10')||'{}');S.loggedIn=p.loggedIn||false;S.currentWorker=p.currentWorker||'';}catch(e){}}
+function saveLocal(){localStorage.setItem('bom_v11',JSON.stringify({loggedIn:S.loggedIn,currentWorker:S.currentWorker}));}
+function loadLocal(){try{var p=JSON.parse(localStorage.getItem('bom_v11')||'{}');S.loggedIn=p.loggedIn||false;S.currentWorker=p.currentWorker||'';}catch(e){}}
 function startListeners(){
   _uo=db.collection('orders').onSnapshot(function(snap){S.orders=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});renderAll();document.getElementById('syncBadge').textContent='🟢 Live';document.getElementById('syncBadge').className='sync-badge sync-live';},function(){document.getElementById('syncBadge').textContent='🔴 Offline';document.getElementById('syncBadge').className='sync-badge sync-off';});
   _us=db.collection('settings').doc('config').onSnapshot(function(doc){if(doc.exists){var d=doc.data();S.workers=d.workers||S.workers;S.shopName=d.shopName||S.shopName;S.shopPhone=d.shopPhone||S.shopPhone;S.shopPassword=d.shopPassword||S.shopPassword;S.erplyCC=d.erplyCC||'';S.erplyUser=d.erplyUser||'';S.erplyPass=d.erplyPass||'';document.getElementById('headerTitle').textContent=S.shopName;renderAll();}});
@@ -317,7 +318,19 @@ function searchBooks(){
     var data=await erplyCall({request:'getProducts',searchName:q,recordsOnPage:'8'});
     list.innerHTML='';
     if(data&&data.records&&data.records.length>0){
-      data.records.forEach(function(p){var d=document.createElement('div');d.className='ac-item';var price=p.price||(p.priceListPrices&&p.priceListPrices[0]?p.priceListPrices[0].price:'');d.textContent=(p.name||'')+(price?' - $'+price:'');d.onclick=function(){document.getElementById('fBook').value=p.name||'';if(price)document.getElementById('fPrice').value=price;list.style.display='none';};list.appendChild(d);});list.style.display='block';
+      data.records.forEach(function(p){
+        var d=document.createElement('div');d.className='ac-item';
+        var price=p.priceWithVat||p.price||(p.priceListPrices&&p.priceListPrices[0]?p.priceListPrices[0].price:'');
+        var code=p.code||p.supplierCode||'';
+        d.textContent=(p.name||'')+(code?' ['+code+']':'')+(price?' - €'+price:'');
+        d.onclick=function(){
+          document.getElementById('fBook').value=p.name||'';
+          if(price)document.getElementById('fPrice').value=price;
+          document.getElementById('fProductCode').value=code;
+          list.style.display='none';
+        };
+        list.appendChild(d);
+      });list.style.display='block';
     }else{list.innerHTML='<div class="ac-item" style="color:#aaa">No match — type manually</div>';list.style.display='block';}
   },400);
 }
@@ -325,7 +338,7 @@ async function saveNewOrder(){
   var name=document.getElementById('fName').value.trim(),phone=document.getElementById('fPhone').value.trim(),book=document.getElementById('fBook').value.trim();
   if(!name||!phone||!book){notify('Fill in: Name, Phone and Book','error');return;}
   var btn=document.getElementById('saveOrderBtn');btn.disabled=true;btn.innerHTML='<span class="loader"></span>';
-  var o={customerName:name,customerPhone:phone,customerEmail:document.getElementById('fEmail').value.trim(),erplyCustId:_selCustId||null,bookTitle:book,price:document.getElementById('fPrice').value.trim(),department:document.getElementById('fDept').value,supplier:document.getElementById('fSupplier').value.trim(),expectedArrival:document.getElementById('fArrival').value,assignedWorker:document.getElementById('fWorker').value,paymentMethod:document.getElementById('fPayMethod').value,deposit:document.getElementById('fDeposit').value.trim(),notes:document.getElementById('fNotes').value.trim(),status:'new',createdAt:Date.now(),updatedAt:Date.now(),history:[{status:'new',worker:S.currentWorker,ts:Date.now(),note:'Order created'}]};
+  var o={customerName:name,customerPhone:phone,customerEmail:document.getElementById('fEmail').value.trim(),erplyCustId:_selCustId||null,bookTitle:book,erplyProductCode:document.getElementById('fProductCode').value.trim(),price:document.getElementById('fPrice').value.trim(),department:document.getElementById('fDept').value,supplier:document.getElementById('fSupplier').value.trim(),expectedArrival:document.getElementById('fArrival').value,assignedWorker:document.getElementById('fWorker').value,paymentMethod:document.getElementById('fPayMethod').value,deposit:document.getElementById('fDeposit').value.trim(),notes:document.getElementById('fNotes').value.trim(),status:'new',createdAt:Date.now(),updatedAt:Date.now(),history:[{status:'new',worker:S.currentWorker,ts:Date.now(),note:'Order created'}]};
   try{await db.collection('orders').add(o);closeModal('newOrderModal');clearNewForm();notify('Order saved!');}catch(e){notify('Error: '+e.message,'error');}
   btn.disabled=false;btn.innerHTML='Save Order';
 }
@@ -351,8 +364,8 @@ function buildMsg(o,type){
   var shop=S.shopName||'Our Bookshop',ph=S.shopPhone?'\nCall us: '+S.shopPhone:'';
   if(type==='unavailable')return 'Dear '+o.customerName+',\n\nWe are sorry — the book you ordered is not available:\n\n'+o.bookTitle+'\n\nWe apologize for the inconvenience.'+ph+'\n'+shop;
   var rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
-  var bal=(o.price&&parseFloat(rem)>0)?'\nRemaining: $'+rem:'';
-  return 'Dear '+o.customerName+',\n\nYour book has arrived and is ready for pickup!\n\n'+o.bookTitle+(o.price?'\nPrice: $'+o.price:'')+(o.deposit?'\nDeposit: $'+o.deposit:'')+bal+'\n\nSee you soon!'+ph+'\n'+shop;
+  var bal=(o.price&&parseFloat(rem)>0)?'\nRemaining: €'+rem:'';
+  return 'Dear '+o.customerName+',\n\nYour book has arrived and is ready for pickup!\n\n'+o.bookTitle+(o.price?'\nPrice: €'+o.price:'')+(o.deposit?'\nDeposit paid: €'+o.deposit:'')+bal+'\n\nSee you soon!'+ph+'\n'+shop;
 }
 function openNotifyModal(o,type){
   document.getElementById('notifyTitle').textContent=type==='unavailable'?'Book Not Available':'Notify Customer';
@@ -384,7 +397,8 @@ async function saveSettings(){
   _erplySK=null;_erplySKExp=0;
   try{await db.collection('settings').doc('config').set(u,{merge:true});closeModal('settingsModal');notify('Settings saved!');}catch(e){notify('Error saving','error');}
 }
-function doLogout(){if(!confirm('Log out?'))return;stopListeners();S.loggedIn=false;saveLocal();closeModal('settingsModal');document.getElementById('loginScreen').classList.add('active');_isFirst=false;document.getElementById('setupNote').style.display='none';document.getElementById('confirmGrp').style.display='none';document.getElementById('loginBtn').textContent='Enter';initLogin();} function renderAll(){
+function doLogout(){if(!confirm('Log out?'))return;stopListeners();S.loggedIn=false;saveLocal();closeModal('settingsModal');document.getElementById('loginScreen').classList.add('active');_isFirst=false;document.getElementById('setupNote').style.display='none';document.getElementById('confirmGrp').style.display='none';document.getElementById('loginBtn').textContent='Enter';initLogin();}
+function renderAll(){
   var search=(document.getElementById('globalSearch')?document.getElementById('globalSearch').value:'').toLowerCase();
   document.getElementById('workerSelect').innerHTML='<option value="">Who am I?</option>'+S.workers.map(function(w){return '<option value="'+esc(w)+'"'+(S.currentWorker===w?' selected':'')+'>'+esc(w)+'</option>';}).join('');
   document.getElementById('fWorker').innerHTML='<option value="">Assign...</option>'+S.workers.map(function(w){return '<option>'+esc(w)+'</option>';}).join('');
@@ -424,16 +438,17 @@ function showDetail(id){
     '<div><strong>Customer</strong>'+esc(o.customerName)+'</div><div><strong>Phone</strong>'+esc(o.customerPhone)+'</div>'+
     '<div><strong>Email</strong>'+(esc(o.customerEmail)||'—')+'</div><div><strong>Assigned</strong>'+(esc(o.assignedWorker)||'—')+'</div>'+
     '<div><strong>Book</strong>'+esc(o.bookTitle)+'</div><div><strong>Dept</strong>'+(o.department?di+' '+esc(o.department):'—')+'</div>'+
-    '<div><strong>Supplier</strong>'+(esc(o.supplier)||'—')+'</div><div><strong>Expected</strong>'+(o.expectedArrival||'—')+'</div>'+
-    '<div><strong>Days open</strong>'+days+'</div><div><strong>Status</strong><span class="badge badge-'+o.status+'">'+SL[o.status]+'</span></div>'+
+    '<div><strong>Product Code</strong>'+(esc(o.erplyProductCode)||'—')+'</div><div><strong>Supplier</strong>'+(esc(o.supplier)||'—')+'</div>'+
+    '<div><strong>Expected</strong>'+(o.expectedArrival||'—')+'</div><div><strong>Days open</strong>'+days+'</div>'+
+    '<div><strong>Status</strong><span class="badge badge-'+o.status+'">'+SL[o.status]+'</span></div>'+
     '</div></div>'+
     '<div style="background:#fef9e7;border-radius:8px;padding:12px;margin-bottom:12px">'+
     '<div style="font-weight:700;font-size:.8em;color:#888;margin-bottom:7px">PAYMENT</div>'+
     '<div class="detail-grid">'+
     '<div><strong>Method</strong>'+(o.paymentMethod?pi+esc(o.paymentMethod):'—')+'</div>'+
-    '<div><strong>Deposit</strong>'+(o.deposit?'$'+esc(o.deposit):'—')+'</div>'+
-    '<div><strong>Total</strong>'+(o.price?'$'+esc(o.price):'—')+'</div>'+
-    '<div><strong>Balance</strong>'+(o.price&&parseFloat(rem)>0?'<span style="color:#e74c3c;font-weight:700">$'+rem+'</span>':'<span style="color:#27ae60">Paid</span>')+'</div>'+
+    '<div><strong>Deposit</strong>'+(o.deposit?'€'+esc(o.deposit):'—')+'</div>'+
+    '<div><strong>Total (incl. VAT)</strong>'+(o.price?'€'+esc(o.price):'—')+'</div>'+
+    '<div><strong>Balance</strong>'+(o.price&&parseFloat(rem)>0?'<span style="color:#e74c3c;font-weight:700">€'+rem+'</span>':'<span style="color:#27ae60">Paid</span>')+'</div>'+
     '</div></div>'+
     (o.notes?'<div style="font-size:.85em;margin-bottom:10px"><strong>Notes:</strong> '+esc(o.notes)+'</div>':'')+
     '<div class="action-btn-group">'+
@@ -448,7 +463,7 @@ function showDetail(id){
   openModal('orderDetailModal');
 }
 function reNotify(id){var o=S.orders.find(function(x){return x.id===id;});if(o)openNotifyModal(o,'arrived');}
-function clearNewForm(){['fName','fPhone','fEmail','fBook','fPrice','fSupplier','fNotes','fDeposit','custSearch'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});document.getElementById('fArrival').value='';document.getElementById('fWorker').value='';document.getElementById('fPayMethod').value='';document.getElementById('fDept').value='';document.getElementById('bookList').style.display='none';document.getElementById('custList').style.display='none';_selCustId=null;}
+function clearNewForm(){['fName','fPhone','fEmail','fBook','fPrice','fSupplier','fNotes','fDeposit','custSearch','fProductCode'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});document.getElementById('fArrival').value='';document.getElementById('fWorker').value='';document.getElementById('fPayMethod').value='';document.getElementById('fDept').value='';document.getElementById('bookList').style.display='none';document.getElementById('custList').style.display='none';_selCustId=null;}
 function openModal(id){
   if(id==='settingsModal'){document.getElementById('sWorkers').value=S.workers.join('\n');document.getElementById('sShopName').value=S.shopName||'';document.getElementById('sShopPhone').value=S.shopPhone||'';document.getElementById('sNewPass').value='';document.getElementById('sErplyCC').value=S.erplyCC||'';document.getElementById('sErplyUser').value=S.erplyUser||'';document.getElementById('sErplyPass').value=S.erplyPass||'';}
   if(id==='newOrderModal'){clearNewForm();renderAll();}
@@ -460,8 +475,8 @@ function notify(msg,type){var el=document.getElementById('notification');el.text
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 loadLocal();
 if(S.loggedIn){document.getElementById('loginScreen').classList.remove('active');startListeners();}
-else{document.getElementById('loginScreen').classList.add('active');initLogin();}
-document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('active');});}); document.addEventListener('click',function(e){if(!e.target.closest('#custSearch')&&!e.target.closest('#custList'))document.getElementById('custList').style.display='none';if(!e.target.closest('#fBook')&&!e.target.closest('#bookList'))document.getElementById('bookList').style.display='none';});
+else{document.getElementById('loginScreen').classList.add('active');initLogin();} document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('active');});});
+document.addEventListener('click',function(e){if(!e.target.closest('#custSearch')&&!e.target.closest('#custList'))document.getElementById('custList').style.display='none';if(!e.target.closest('#fBook')&&!e.target.closest('#bookList'))document.getElementById('bookList').style.display='none';});
 </script>
 </body>
 </html>
