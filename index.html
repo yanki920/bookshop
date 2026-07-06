@@ -140,7 +140,10 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#333}
     <div class="form-group ac-wrap">
       <label>Search Customer (Erply)</label>
       <input type="text" id="custSearch" placeholder="Type name or phone…" oninput="searchCustomers()" autocomplete="off"/>
-      <div class="ac-list" id="custList"></div>
+        <div class="ac-list" id="custList"></div>
+    </div>
+    <div style="text-align:right;margin-top:-6px;margin-bottom:8px">
+      <button type="button" class="btn btn-success btn-sm" onclick="createErplyCustomer()">➕ Create New Customer in Erply</button>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Customer Name *</label><input type="text" id="fName" placeholder="Full name"/></div>
@@ -310,7 +313,24 @@ function searchCustomers(){
     }else{list.innerHTML='<div class="ac-item" style="color:#aaa">No match — fill manually</div>';list.style.display='block';_selCustId=null;}
   },400);
 }
-function searchBooks(){
+async function createErplyCustomer(){
+  var name=document.getElementById('fName').value.trim();
+  var phone=document.getElementById('fPhone').value.trim();
+  var email=document.getElementById('fEmail').value.trim();
+  if(!name){notify('Fill in Customer Name first!','error');return;}
+  notify('Creating customer in Erply...','info');
+  var nameParts=name.split(' ');
+  var firstName=nameParts[0]||'';
+  var lastName=nameParts.slice(1).join(' ')||'-';
+  var data=await erplyCall({request:'saveCustomer',firstName:firstName,lastName:lastName,phone:phone,email:email});
+  if(data&&data.status&&data.status.responseStatus==='ok'){
+    var custId=data.records[0].customerID;
+    _selCustId=custId;
+    notify('✅ Customer created in Erply! ID: '+custId);
+  }else{
+    notify('❌ Could not create in Erply — check credentials','error');
+  }
+}function searchBooks(){
   var q=document.getElementById('fBook').value.trim(),list=document.getElementById('bookList');
   if(q.length<2){list.style.display='none';return;}
   clearTimeout(_bkTimer);
