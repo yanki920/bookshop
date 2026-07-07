@@ -225,7 +225,7 @@
             <button class="btn btn-primary" onclick="saveSettings()">💾 Save & Sync</button>
         </div>
     </div>
-</div><script>
+<script>
 var firebaseConfig={apiKey:"AIzaSyBprW8gvfVWcI0JtjYmN952B-oscdmAEc0",authDomain:"bookshop-orders.firebaseapp.com",projectId:"bookshop-orders",storageBucket:"bookshop-orders.firebasestorage.app",messagingSenderId:"355881664186",appId:"1:355881664186:web:022156c2134e240cce4c83"};
 firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore();
@@ -282,31 +282,42 @@ function doLogin(){
     err.textContent='';
     var pw=document.getElementById('loginPassword').value.trim();
     if(!pw){err.textContent='Please enter a password.';return;}
-    btn.innerHTML='<span class="loader"></span> Checking…';btn.disabled=true;
+    btn.innerHTML='<span class="loader"></span> Checking...';
+    btn.disabled=true;
     db.collection('settings').doc('config').get().then(function(doc){
         if(!doc.exists||!doc.data().shopPassword){
             var pw2=document.getElementById('loginPasswordConfirm').value.trim();
-            if(pw!==pw2){err.textContent='❌ Passwords do not match!';btn.innerHTML='Create Password & Enter';btn.disabled=false;return;}
+            if(pw!==pw2){
+                err.textContent='Passwords do not match!';
+                btn.innerHTML='Create Password & Enter';
+                btn.disabled=false;
+                return;
+            }
             db.collection('settings').doc('config').set({shopPassword:pw,workers:S.workers,shopName:'Our Bookshop',shopPhone:''},{merge:true}).then(function(){
                 S.loggedIn=true;saveLocal();
                 document.getElementById('loginScreen').classList.remove('active');
-                startListeners();notify('✅ Password created! Welcome!');
+                startListeners();notify('Password created! Welcome!');
             });
         } else {
             if(doc.data().shopPassword===pw){
                 S.loggedIn=true;saveLocal();
                 document.getElementById('loginScreen').classList.remove('active');
-                startListeners();notify('✅ Welcome back!');
+                startListeners();notify('Welcome back!');
             } else {
-                err.textContent='❌ Wrong password — try again.';
+                err.textContent='Wrong password, try again.';
             }
         }
-        btn.innerHTML=_isFirst?'Create Password & Enter':'Enter';btn.disabled=false;
-    }).catch(function(){err.textContent='❌ Connection error.';btn.innerHTML='Enter';btn.disabled=false;});
+        btn.innerHTML=_isFirst?'Create Password & Enter':'Enter';
+        btn.disabled=false;
+    }).catch(function(){
+        err.textContent='Connection error.';
+        btn.innerHTML='Enter';
+        btn.disabled=false;
+    });
 }
 
 function getOrderBooks(o){
-    if(o.books&&o.books.length>0)return o.books;
+    if(o.books&&o.books.length>0) return o.books;
     return [{title:o.bookTitle||'Untitled',isbn:o.isbn||'',qty:parseInt(o.quantity||1),price:o.price||'',supplier:o.supplier||'',link:o.lehmannsLink||''}];
 }
 
@@ -328,60 +339,73 @@ function updateTotals(){
 }
 
 function addBookRow(data){
-    if(!data)data={};
+    if(!data) data={};
     var container=document.getElementById('booksContainer');
     var div=document.createElement('div');
     div.className='book-row';
     var stdSuppliers=['Lehmanns','Sifrei','Judaica Press','Girtler'];
-    var currentSupplier=data.supplier||'Lehmanns';
-    var isCustom=currentSupplier&&!stdSuppliers.includes(currentSupplier);
-    div.innerHTML=
-        '<button type="button" class="remove-book-btn" onclick="this.parentElement.remove();updateTotals();">✕</button>'+
-        '<div class="form-group"><label>Book Title *</label><input type="text" class="b-title" placeholder="Book title" value="'+esc(data.title||'')+'"/></div>'+
-        '<div class="form-row">'+
-            '<div class="form-group"><label>ISBN / Author</label><input type="text" class="b-isbn" placeholder="ISBN" value="'+esc(data.isbn||'')+'"/></div>'+
-            '<div class="form-group"><label>Qty</label><input type="number" class="b-qty" value="'+(data.qty||1)+'" min="1" onchange="updateTotals()"/></div>'+
-        '</div>'+
-        '<div class="form-row">'+
-            '<div class="form-group"><label>Price (£)</label><input type="number" class="b-price" placeholder="0.00" step="0.01" value="'+(data.price||'')+'" onchange="updateTotals()"/></div>'+
-            '<div class="form-group"><label>Supplier</label>'+
-                '<select class="b-supplier" onchange="toggleCustomSupplier(this)">'+
-                    '<option value="Lehmanns"'+(currentSupplier==='Lehmanns'?' selected':'')+'>Lehmanns</option>'+
-                    '<option value="Sifrei"'+(currentSupplier==='Sifrei'?' selected':'')+'>Sifrei</option>'+
-                    '<option value="Judaica Press"'+(currentSupplier==='Judaica Press'?' selected':'')+'>Judaica Press</option>'+
-                    '<option value="Girtler"'+(currentSupplier==='Girtler'?' selected':'')+'>Girtler</option>'+
-                    '<option value="__custom__"'+(isCustom?' selected':'')+'>Other…</option>'+
-                '</select>'+
-                '<input type="text" class="b-supplier-custom" placeholder="Type supplier name" value="'+(isCustom?esc(currentSupplier):'')+'" style="margin-top:5px;display:'+(isCustom?'block':'none')+'"/>'+
-            '</div>'+
-        '</div>'+
-        '<div class="form-group"><label>🔗 Lehmanns Product Link</label><input type="url" class="b-link" placeholder="https://www.lehmanns.co.uk/..." value="'+esc(data.link||'')+'"/></div>';
+    var cs=data.supplier||'Lehmanns';
+    var isCustom=cs&&!stdSuppliers.includes(cs);
+    var html='';
+    html+='<button type="button" class="remove-book-btn" onclick="this.parentElement.remove();updateTotals();">x</button>';
+    html+='<div class="form-group"><label>Book Title</label>';
+    html+='<input type="text" class="b-title" placeholder="Book title" value="'+esc(data.title||'')+'"/></div>';
+    html+='<div class="form-row">';
+    html+='<div class="form-group"><label>ISBN / Author</label>';
+    html+='<input type="text" class="b-isbn" placeholder="ISBN" value="'+esc(data.isbn||'')+'"/></div>';
+    html+='<div class="form-group"><label>Qty</label>';
+    html+='<input type="number" class="b-qty" value="'+(data.qty||1)+'" min="1" onchange="updateTotals()"/></div>';
+    html+='</div>';
+    html+='<div class="form-row">';
+    html+='<div class="form-group"><label>Price (£)</label>';
+    html+='<input type="number" class="b-price" placeholder="0.00" step="0.01" value="'+(data.price||'')+'" onchange="updateTotals()"/></div>';
+    html+='<div class="form-group"><label>Supplier</label>';
+    html+='<select class="b-supplier" onchange="toggleCustomSupplier(this)">';
+    html+='<option value="Lehmanns"'+(cs==='Lehmanns'?' selected':'')+'>Lehmanns</option>';
+    html+='<option value="Sifrei"'+(cs==='Sifrei'?' selected':'')+'>Sifrei</option>';
+    html+='<option value="Judaica Press"'+(cs==='Judaica Press'?' selected':'')+'>Judaica Press</option>';
+    html+='<option value="Girtler"'+(cs==='Girtler'?' selected':'')+'>Girtler</option>';
+    html+='<option value="__custom__"'+(isCustom?' selected':'')+'>Other...</option>';
+    html+='</select>';
+    html+='<input type="text" class="b-supplier-custom" placeholder="Type supplier" value="'+(isCustom?esc(cs):'')+'" style="margin-top:5px;display:'+(isCustom?'block':'none')+'"/>';
+    html+='</div></div>';
+    html+='<div class="form-group"><label>Lehmanns Product Link</label>';
+    html+='<input type="url" class="b-link" placeholder="https://www.lehmanns.co.uk/..." value="'+esc(data.link||'')+'"/></div>';
+    div.innerHTML=html;
     container.appendChild(div);
     updateTotals();
 }
-}
 
 function saveNewOrder(){
-    var name=document.getElementById('fName').value.trim(),phone=document.getElementById('fPhone').value.trim();
-    if(!name||!phone){notify('❌ Fill in: Customer Name & Phone','error');return;}
+    var name=document.getElementById('fName').value.trim();
+    var phone=document.getElementById('fPhone').value.trim();
+    if(!name||!phone){notify('Fill in: Customer Name and Phone','error');return;}
     var bookContainers=document.querySelectorAll('.book-row');
-    if(!bookContainers.length){notify('❌ Add at least one book!','error');return;}
+    if(!bookContainers.length){notify('Add at least one book!','error');return;}
     var books=[];
     for(var i=0;i<bookContainers.length;i++){
         var el=bookContainers[i];
         var title=el.querySelector('.b-title').value.trim();
-        if(!title){notify('❌ Fill in all book titles!','error');return;}
+        if(!title){notify('Fill in all book titles!','error');return;}
         var supSel=el.querySelector('.b-supplier').value;
         var supVal=supSel==='__custom__'?el.querySelector('.b-supplier-custom').value.trim():supSel;
-        books.push({title:title,isbn:el.querySelector('.b-isbn').value.trim(),qty:parseInt(el.querySelector('.b-qty').value||1),price:el.querySelector('.b-price').value.trim(),supplier:supVal,link:el.querySelector('.b-link').value.trim()});
+        books.push({
+            title:title,
+            isbn:el.querySelector('.b-isbn').value.trim(),
+            qty:parseInt(el.querySelector('.b-qty').value||1),
+            price:el.querySelector('.b-price').value.trim(),
+            supplier:supVal,
+            link:el.querySelector('.b-link').value.trim()
+        });
     }
-    var btn=document.getElementById('saveOrderBtn');btn.disabled=true;btn.innerHTML='<span class="loader"></span> Saving…';
+    var btn=document.getElementById('saveOrderBtn');
+    btn.disabled=true;
+    btn.innerHTML='<span class="loader"></span> Saving...';
     var o={
         customerName:name,customerPhone:phone,
         customerEmail:document.getElementById('fEmail').value.trim(),
         notificationPreference:document.getElementById('fPreference').value,
-        books:books,
-        bookTitle:books[0].title,isbn:books[0].isbn,supplier:books[0].supplier,
+        books:books,bookTitle:books[0].title,isbn:books[0].isbn,supplier:books[0].supplier,
         price:document.getElementById('fPrice').value,
         expectedArrival:document.getElementById('fArrival').value,
         assignedWorker:document.getElementById('fWorker').value,
@@ -392,59 +416,69 @@ function saveNewOrder(){
         history:[{status:'new',worker:S.currentWorker,ts:Date.now(),note:'Order created'}]
     };
     db.collection('orders').add(o).then(function(){
-        closeModal('newOrderModal');clearNewForm();notify('✅ Order saved!');
-     }).catch(function(e){notify('❌ Error: '+e.message,'error');});
-    btn.disabled=false;btn.innerHTML='💾 Save Order';
+        closeModal('newOrderModal');clearNewForm();notify('Order saved!');
+    }).catch(function(e){notify('Error: '+e.message,'error');});
+    btn.disabled=false;
+    btn.innerHTML='Save Order';
 }
 
 function advanceOrder(id){
-    var o=S.orders.find(function(x){return x.id===id;});if(!o||!NEXT[o.status])return;
+    var o=S.orders.find(function(x){return x.id===id;});
+    if(!o||!NEXT[o.status]) return;
     var ns=NEXT[o.status];
     var nh=(o.history||[]).concat([{status:ns,worker:S.currentWorker,ts:Date.now(),note:'Moved to: '+SL[ns]}]);
     db.collection('orders').doc(id).update({status:ns,updatedAt:Date.now(),history:nh}).then(function(){
-        closeModal('orderDetailModal');notify('✅ Moved to: '+SL[ns]);
+        closeModal('orderDetailModal');notify('Moved to: '+SL[ns]);
         if(ns==='arrived'){_pni=id;openNotifyModal(o);}
-    }).catch(function(){notify('❌ Error updating','error');});
+    }).catch(function(){notify('Error updating','error');});
 }
 
 function undoStatus(id){
     var o=S.orders.find(function(x){return x.id===id;});
-    if(!o||!o.history||o.history.length<=1){notify('⚠️ Nothing to undo.','error');return;}
-    if(!confirm('↩️ Revert to previous status?'))return;
+    if(!o||!o.history||o.history.length<=1){notify('Nothing to undo.','error');return;}
+    if(!confirm('Revert to previous status?')) return;
     var hist=o.history.slice(0,-1);
     var prevStatus=hist[hist.length-1].status;
     db.collection('orders').doc(id).update({status:prevStatus,updatedAt:Date.now(),history:hist}).then(function(){
-        closeModal('orderDetailModal');notify('↩️ Reverted to: '+SL[prevStatus]);
-    }).catch(function(e){notify('❌ Error: '+e.message,'error');});
+        closeModal('orderDetailModal');notify('Reverted to: '+SL[prevStatus]);
+    }).catch(function(e){notify('Error: '+e.message,'error');});
 }
 
 function syncCustomerToErply(id){
-    notify('🔄 Syncing to Erply CRM…','info');
+    notify('Syncing to Erply CRM...','info');
     setTimeout(function(){
         db.collection('orders').doc(id).update({erplySyncedAt:Date.now(),erplyStatus:'Sync Complete'}).then(function(){
-            notify('✅ Synced to Erply!');showDetail(id);
-        }).catch(function(e){notify('❌ Erply error: '+e.message,'error');});
+            notify('Synced to Erply!');showDetail(id);
+        }).catch(function(e){notify('Erply error: '+e.message,'error');});
     },1200);
 }
 
 function deleteOrder(id){
-    if(!confirm('Delete this order permanently?'))return;
-    db.collection('orders').doc(id).delete().then(function(){closeModal('orderDetailModal');notify('🗑️ Deleted');}).catch(function(){notify('❌ Error','error');});
+    if(!confirm('Delete this order permanently?')) return;
+    db.collection('orders').doc(id).delete().then(function(){
+        closeModal('orderDetailModal');notify('Deleted');
+    }).catch(function(){notify('Error','error');});
 }
 
 function reassignOrder(id){
-    var o=S.orders.find(function(x){return x.id===id;});if(!o)return;
+    var o=S.orders.find(function(x){return x.id===id;});
+    if(!o) return;
     var w=prompt('Assign to worker:\n\n'+S.workers.join('\n'));
-    if(w&&w.trim()){db.collection('orders').doc(id).update({assignedWorker:w.trim(),updatedAt:Date.now()}).then(function(){notify('✅ Reassigned!');showDetail(id);});}
+    if(w&&w.trim()){
+        db.collection('orders').doc(id).update({assignedWorker:w.trim(),updatedAt:Date.now()}).then(function(){
+            notify('Reassigned!');showDetail(id);
+        });
+    }
 }
 
 function buildMessage(o){
-    var shop=S.shopName||'Our Bookshop',ph=S.shopPhone?'\nCall us: '+S.shopPhone:'';
+    var shop=S.shopName||'Our Bookshop';
+    var ph=S.shopPhone?'\nCall us: '+S.shopPhone:'';
     var books=getOrderBooks(o);
-    var list=books.map(function(b){return '📖 '+b.qty+'x '+b.title+(b.isbn?' (ISBN: '+b.isbn+')':'');}).join('\n');
+    var list=books.map(function(b){return b.qty+'x '+b.title+(b.isbn?' (ISBN: '+b.isbn+')':'');}).join('\n');
     var rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
-    var bal=(o.price&&parseFloat(rem)>0)?'\n💳 Balance due: £'+rem:'';
-    return 'Dear '+o.customerName+',\n\nYour order is ready for pickup! 📚\n\n'+list+bal+'\n\nSee you soon!\n'+shop+ph;
+    var bal=(o.price&&parseFloat(rem)>0)?'\nBalance due: £'+rem:'';
+    return 'Dear '+o.customerName+',\n\nYour order is ready for pickup!\n\n'+list+bal+'\n\nSee you soon!\n'+shop+ph;
 }
 
 function openNotifyModal(o){
@@ -460,14 +494,16 @@ function openNotifyModal(o){
 }
 
 function doNotify(type){
-    var msg=document.getElementById('notifyMsg').value,phone=document.getElementById('notifyPhone').value.trim(),email=document.getElementById('notifyEmail').value.trim();
-    if(type==='wa')window.open('https://wa.me/'+phone.replace(/[^0-9+]/g,'')+'?text='+encodeURIComponent(msg),'_blank');
-    else if(type==='sms')window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);
-    else if(type==='email')window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Your book is ready!')+'&body='+encodeURIComponent(msg);
-    closeModal('notifyModal');notify('📬 Notification sent!','info');_pni=null;
+    var msg=document.getElementById('notifyMsg').value;
+    var phone=document.getElementById('notifyPhone').value.trim();
+    var email=document.getElementById('notifyEmail').value.trim();
+    if(type==='wa') window.open('https://wa.me/'+phone.replace(/[^0-9+]/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+    else if(type==='sms') window.location.href='sms:'+phone+'?body='+encodeURIComponent(msg);
+    else if(type==='email') window.location.href='mailto:'+email+'?subject=Your book is ready!&body='+encodeURIComponent(msg);
+    closeModal('notifyModal');notify('Notification sent!','info');_pni=null;
 }
 
-function skipNotify(){closeModal('notifyModal');notify('⚠️ Notification skipped','info');_pni=null;}
+function skipNotify(){closeModal('notifyModal');notify('Skipped','info');_pni=null;}
 
 function saveSettings(){
     S.workers=document.getElementById('settingsWorkers').value.split('\n').map(function(w){return w.trim();}).filter(Boolean);
@@ -475,12 +511,14 @@ function saveSettings(){
     S.shopPhone=document.getElementById('settingsShopPhone').value.trim();
     var np=document.getElementById('settingsNewPass').value.trim();
     var u={workers:S.workers,shopName:S.shopName,shopPhone:S.shopPhone};
-    if(np)u.shopPassword=np;
-    db.collection('settings').doc('config').set(u,{merge:true}).then(function(){closeModal('settingsModal');notify('✅ Settings saved!');}).catch(function(){notify('❌ Error saving','error');});
+    if(np) u.shopPassword=np;
+    db.collection('settings').doc('config').set(u,{merge:true}).then(function(){
+        closeModal('settingsModal');notify('Settings saved!');
+    }).catch(function(){notify('Error saving','error');});
 }
 
 function doLogout(){
-    if(!confirm('Log out?'))return;
+    if(!confirm('Log out?')) return;
     stopListeners();S.loggedIn=false;saveLocal();
     closeModal('settingsModal');
     document.getElementById('loginScreen').classList.add('active');
@@ -492,88 +530,113 @@ function doLogout(){
 }
 
 function renderAll(){
-    document.getElementById('workerSelect').innerHTML='<option value="">— Who am I? —</option>'+S.workers.map(function(w){return '<option value="'+esc(w)+'"'+(S.currentWorker===w?' selected':'')+'>'+esc(w)+'</option>';}).join('');
-    document.getElementById('fWorker').innerHTML='<option value="">— Assign —</option>'+S.workers.map(function(w){return '<option>'+esc(w)+'</option>';}).join('');
+    var wo='<option value="">Who am I?</option>';
+    S.workers.forEach(function(w){wo+='<option value="'+esc(w)+'"'+(S.currentWorker===w?' selected':'')+'>'+esc(w)+'</option>';});
+    document.getElementById('workerSelect').innerHTML=wo;
+    var ao='<option value="">Assign to...</option>';
+    S.workers.forEach(function(w){ao+='<option>'+esc(w)+'</option>';});
+    document.getElementById('fWorker').innerHTML=ao;
     STATUSES.forEach(function(st){
         var orders=S.orders.filter(function(o){return o.status===st;});
         document.getElementById('cnt-'+st).textContent=orders.length;
         var el=document.getElementById('cards-'+st);
         if(!orders.length){el.innerHTML='<div class="empty-state">No orders here</div>';return;}
-        el.innerHTML=orders.sort(function(a,b){return a.updatedAt-b.updatedAt;}).map(function(o){
+        var html='';
+        orders.sort(function(a,b){return a.updatedAt-b.updatedAt;}).forEach(function(o){
             var over=o.expectedArrival&&st!=='done'&&new Date(o.expectedArrival)<new Date();
             var books=getOrderBooks(o);
-            var bookHTML='<div class="card-book">'+books[0].qty+'x '+esc(books[0].title)+'</div>'+(books.length>1?'<div style="font-size:.72em;color:#3498db;font-weight:bold">➕ '+(books.length-1)+' more item(s)</div>':'');
-            var trackLine=o.trackingNumber?'<div style="font-size:.7em;background:#ebf5fb;color:#2980b9;padding:2px 5px;border-radius:4px;margin-top:4px;max-width:fit-content">🚚 '+esc(o.trackingNumber)+'</div>':'';
-            var prefBadge=o.notificationPreference?'<span class="pref-badge">⭐ '+esc(o.notificationPreference)+'</span>':'';
-            return '<div class="order-card'+(over?' overdue':'')+'" onclick="showDetail(\''+o.id+'\')">'+
-                '<div class="card-name">'+esc(o.customerName)+(over?' <span class="overdue-tag">LATE</span>':'')+'</div>'+
-                bookHTML+trackLine+
-                '<div class="card-meta"><span>📞 '+esc(o.customerPhone)+'</span>'+(o.expectedArrival?'<span>📅 '+o.expectedArrival+'</span>':'')+'</div>'+
-                '<div class="card-tags">'+
-                    (o.assignedWorker?'<span class="card-worker">👤 '+esc(o.assignedWorker)+'</span>':'')+
-                    (o.paymentMethod?'<span class="payment-badge">'+(PI[o.paymentMethod]||'💰')+' '+esc(o.paymentMethod)+'</span>':'')+
-                    (o.deposit?'<span class="deposit-badge">Dep. £'+esc(o.deposit)+'</span>':'')+
-                    prefBadge+
-                '</div></div>';
-        }).join('');
+            var bookHTML='<div class="card-book">'+books[0].qty+'x '+esc(books[0].title)+'</div>';
+            if(books.length>1) bookHTML+='<div style="font-size:.72em;color:#3498db;font-weight:bold">+ '+(books.length-1)+' more items</div>';
+            var trackLine=o.trackingNumber?'<div style="font-size:.7em;background:#ebf5fb;color:#2980b9;padding:2px 5px;border-radius:4px;margin-top:4px">Tracking: '+esc(o.trackingNumber)+'</div>':'';
+            var prefBadge=o.notificationPreference?'<span class="pref-badge">'+esc(o.notificationPreference)+'</span>':'';
+            var wb=o.assignedWorker?'<span class="card-worker">'+esc(o.assignedWorker)+'</span>':'';
+            var pb=o.paymentMethod?'<span class="payment-badge">'+(PI[o.paymentMethod]||'')+' '+esc(o.paymentMethod)+'</span>':'';
+            var db2=o.deposit?'<span class="deposit-badge">Dep. £'+esc(o.deposit)+'</span>':'';
+            var dm=o.expectedArrival?'<span>'+o.expectedArrival+'</span>':'';
+            html+='<div class="order-card'+(over?' overdue':'')+'" onclick="showDetail(\''+o.id+'\')">';
+            html+='<div class="card-name">'+esc(o.customerName)+(over?' <span class="overdue-tag">LATE</span>':'')+'</div>';
+            html+=bookHTML+trackLine;
+            html+='<div class="card-meta"><span>'+esc(o.customerPhone)+'</span>'+dm+'</div>';
+            html+='<div class="card-tags">'+wb+pb+db2+prefBadge+'</div>';
+            html+='</div>';
+        });
+        el.innerHTML=html;
     });
 }
 
 function showDetail(id){
-    var o=S.orders.find(function(x){return x.id===id;});if(!o)return;
+    var o=S.orders.find(function(x){return x.id===id;});
+    if(!o) return;
     var days=Math.floor((Date.now()-o.createdAt)/86400000);
     var rem=(parseFloat(o.price||0)-parseFloat(o.deposit||0)).toFixed(2);
     var books=getOrderBooks(o);
-    var booksHTML=books.map(function(b){
-        var lnk=b.link?'<a href="'+esc(b.link)+'" target="_blank" style="margin-left:8px;color:#2980b9;font-weight:700">🔗 Link</a>':'';
-        return '<div style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eee"><strong>'+b.qty+'x '+esc(b.title)+'</strong>'+lnk+'<br><span style="font-size:.8em;color:#7f8c8d">ISBN: '+(esc(b.isbn)||'—')+' | Supplier: '+(esc(b.supplier)||'—')+'</span></div>';
-    }).join('');
-    var trackSection=o.trackingNumber?'<div style="background:#ebf5fb;border-left:4px solid #2980b9;border-radius:4px;padding:10px;margin-bottom:14px;font-size:.82em">🚚 <strong>Tracking:</strong> <span style="font-family:monospace;font-weight:bold">'+esc(o.trackingNumber)+'</span></div>':'';
-    var erplyBtn=o.erplyStatus?'<span style="color:#27ae60;font-weight:700;margin-left:10px">🔗 Erply Synced</span>':'<button class="btn btn-secondary btn-sm" onclick="syncCustomerToErply(\''+id+'\')" style="margin-left:10px">🔗 Sync Erply</button>';
-    document.getElementById('detailContent').innerHTML=
-        '<div class="modal-header"><h2>📖 Order Detail</h2><button class="btn btn-secondary btn-sm" onclick="closeModal(\'orderDetailModal\')">✕</button></div>'+
-        trackSection+
-        '<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:14px">'+
-            '<div class="detail-grid">'+
-                '<div><strong>Customer</strong>'+esc(o.customerName)+erplyBtn+'</div>'+
-                '<div><strong>Phone</strong>'+esc(o.customerPhone)+'</div>'+
-                '<div><strong>Email</strong>'+(esc(o.customerEmail)||'—')+'</div>'+
-                '<div><strong>Worker</strong>'+(esc(o.assignedWorker)||'—')+'</div>'+
-                '<div><strong>Days Open</strong>'+days+' day'+(days!==1?'s':'')+'</div>'+
-                '<div><strong>Status</strong><span class="badge badge-'+o.status+'">'+SL[o.status]+'</span>'+(o.notificationPreference?'<div style="font-size:.8em;color:#4a5568;margin-top:3px">⭐ Prefers: <strong>'+esc(o.notificationPreference)+'</strong></div>':'')+'</div>'+
-            '</div>'+
-        '</div>'+
-        '<div style="background:white;border:1px solid #eee;border-radius:8px;padding:13px;margin-bottom:14px">'+
-            '<div style="font-weight:700;font-size:.8em;color:#888;margin-bottom:8px;text-transform:uppercase">📦 Books</div>'+booksHTML+
-        '</div>'+
-        '<div style="background:#fef9e7;border-radius:8px;padding:13px;margin-bottom:14px">'+
-            '<div class="detail-grid">'+
-                '<div><strong>Payment</strong>'+(o.paymentMethod?(PI[o.paymentMethod]||'💰')+' '+esc(o.paymentMethod):'—')+'</div>'+
-                '<div><strong>Deposit</strong>'+(o.deposit?'£'+esc(o.deposit):'—')+'</div>'+
-                '<div><strong>Total</strong>'+(o.price?'£'+esc(o.price):'—')+'</div>'+
-                '<div><strong>Balance</strong>'+(o.price&&parseFloat(rem)>0?'<span style="color:#e74c3c;font-weight:700">£'+rem+'</span>':'<span style="color:#27ae60">✅ Paid</span>')+'</div>'+
-            '</div>'+
-        '</div>'+
-        (o.notes?'<div style="font-size:.87em;margin-bottom:12px"><strong>📝 Notes:</strong> '+esc(o.notes)+'</div>':'')+
-        '<div class="action-btn-group">'+
-            (NB[o.status]?'<button class="btn btn-success" onclick="advanceOrder(\''+id+'\')">'+NB[o.status]+'</button>':'<strong style="color:#27ae60">✅ Complete!</strong>')+
-            (o.status==='arrived'?'<button class="btn btn-wa btn-sm" onclick="reNotify(\''+id+'\')">📬 Re-Notify</button>':'')+
-            (o.history&&o.history.length>1?'<button class="btn btn-secondary btn-sm" onclick="undoStatus(\''+id+'\')">↩️ Undo</button>':'')+
-            '<button class="btn btn-warning btn-sm" onclick="reassignOrder(\''+id+'\')">👤 Reassign</button>'+
-            '<button class="btn btn-danger btn-sm" onclick="deleteOrder(\''+id+'\')">🗑️ Delete</button>'+
-        '</div>'+
-        '<div style="margin-top:20px"><strong style="font-size:.9em">📋 History</strong><div style="margin-top:8px">'+
-            (o.history||[]).slice().reverse().map(function(h){
-                return '<div class="history-item"><div class="history-status">'+(SL[h.status]||h.status)+'</div><div class="history-meta">'+(h.worker?'👤 '+esc(h.worker)+' · ':'')+'📅 '+new Date(h.ts).toLocaleString()+(h.note?' · '+esc(h.note):'')+'</div></div>';
-            }).join('')+
-        '</div></div>';
+    var booksHTML='';
+    books.forEach(function(b){
+        var lnk=b.link?'<a href="'+esc(b.link)+'" target="_blank" style="margin-left:8px;color:#2980b9;font-weight:700">Link</a>':'';
+        booksHTML+='<div style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eee">';
+        booksHTML+='<strong>'+b.qty+'x '+esc(b.title)+'</strong>'+lnk+'<br>';
+        booksHTML+='<span style="font-size:.8em;color:#7f8c8d">ISBN: '+(esc(b.isbn)||'none')+' | Supplier: '+(esc(b.supplier)||'none')+'</span></div>';
+    });
+    var trackSection='';
+    if(o.trackingNumber){
+        trackSection='<div style="background:#ebf5fb;border-left:4px solid #2980b9;border-radius:4px;padding:10px;margin-bottom:14px;font-size:.82em">';
+        trackSection+='Tracking: <strong>'+esc(o.trackingNumber)+'</strong></div>';
+    }
+    var erplyBtn=o.erplyStatus?
+        '<span style="color:#27ae60;font-weight:700;margin-left:10px">Erply Synced</span>':
+        '<button class="btn btn-secondary btn-sm" onclick="syncCustomerToErply(\''+id+'\')" style="margin-left:10px">Sync Erply</button>';
+    var balHTML=o.price&&parseFloat(rem)>0?
+        '<span style="color:#e74c3c;font-weight:700">£'+rem+'</span>':
+        '<span style="color:#27ae60">Fully Paid</span>';
+    var prefLine=o.notificationPreference?'<div style="font-size:.8em;margin-top:3px">Prefers: <strong>'+esc(o.notificationPreference)+'</strong></div>':'';
+    var historyHTML='';
+    (o.history||[]).slice().reverse().forEach(function(h){
+        historyHTML+='<div class="history-item">';
+        historyHTML+='<div class="history-status">'+(SL[h.status]||h.status)+'</div>';
+        historyHTML+='<div class="history-meta">'+(h.worker?h.worker+' - ':'')+new Date(h.ts).toLocaleString()+(h.note?' - '+esc(h.note):'')+'</div>';
+        historyHTML+='</div>';
+    });
+    var html='';
+    html+='<div class="modal-header"><h2>Order Detail</h2>';
+    html+='<button class="btn btn-secondary btn-sm" onclick="closeModal(\'orderDetailModal\')">X</button></div>';
+    html+=trackSection;
+    html+='<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:14px">';
+    html+='<div class="detail-grid">';
+    html+='<div><strong>Customer</strong>'+esc(o.customerName)+erplyBtn+'</div>';
+    html+='<div><strong>Phone</strong>'+esc(o.customerPhone)+'</div>';
+    html+='<div><strong>Email</strong>'+(esc(o.customerEmail)||'none')+'</div>';
+    html+='<div><strong>Worker</strong>'+(esc(o.assignedWorker)||'none')+'</div>';
+    html+='<div><strong>Days Open</strong>'+days+' days</div>';
+    html+='<div><strong>Status</strong><span class="badge badge-'+o.status+'">'+SL[o.status]+'</span>'+prefLine+'</div>';
+    html+='</div></div>';
+    html+='<div style="background:white;border:1px solid #eee;border-radius:8px;padding:13px;margin-bottom:14px">';
+    html+='<div style="font-weight:700;font-size:.8em;color:#888;margin-bottom:8px">BOOKS</div>';
+    html+=booksHTML+'</div>';
+    html+='<div style="background:#fef9e7;border-radius:8px;padding:13px;margin-bottom:14px">';
+    html+='<div class="detail-grid">';
+    html+='<div><strong>Payment</strong>'+(o.paymentMethod?esc(o.paymentMethod):'none')+'</div>';
+    html+='<div><strong>Deposit</strong>'+(o.deposit?'£'+esc(o.deposit):'none')+'</div>';
+    html+='<div><strong>Total</strong>'+(o.price?'£'+esc(o.price):'none')+'</div>';
+    html+='<div><strong>Balance</strong>'+balHTML+'</div>';
+    html+='</div></div>';
+    if(o.notes) html+='<div style="font-size:.87em;margin-bottom:12px"><strong>Notes:</strong> '+esc(o.notes)+'</div>';
+    html+='<div class="action-btn-group">';
+    if(NB[o.status]) html+='<button class="btn btn-success" onclick="advanceOrder(\''+id+'\')">'+NB[o.status]+'</button>';
+    else html+='<strong style="color:#27ae60">Complete!</strong>';
+    if(o.status==='arrived') html+='<button class="btn btn-wa btn-sm" onclick="reNotify(\''+id+'\')">Re-Notify</button>';
+    if(o.history&&o.history.length>1) html+='<button class="btn btn-secondary btn-sm" onclick="undoStatus(\''+id+'\')">Undo</button>';
+    html+='<button class="btn btn-warning btn-sm" onclick="reassignOrder(\''+id+'\')">Reassign</button>';
+    html+='<button class="btn btn-danger btn-sm" onclick="deleteOrder(\''+id+'\')">Delete</button>';
+    html+='</div>';
+    html+='<div style="margin-top:20px"><strong>History</strong><div style="margin-top:8px">'+historyHTML+'</div></div>';
+    document.getElementById('detailContent').innerHTML=html;
     openModal('orderDetailModal');
 }
 
-function reNotify(id){var o=S.orders.find(function(x){return x.id===id;});if(o)openNotifyModal(o);}
+function reNotify(id){var o=S.orders.find(function(x){return x.id===id;});if(o) openNotifyModal(o);}
 
 function clearNewForm(){
-    ['fName','fPhone','fEmail','fNotes','fDeposit','fPrice'].forEach(function(id){document.getElementById(id).value='';});
+    ['fName','fPhone','fEmail','fNotes','fDeposit','fPrice'].forEach(function(fid){document.getElementById(fid).value='';});
     document.getElementById('fArrival').value='';
     document.getElementById('fPayMethod').value='';
     document.getElementById('fPreference').value='WhatsApp';
@@ -593,12 +656,20 @@ function openModal(id){
 
 function closeModal(id){document.getElementById(id).classList.remove('active');}
 function changeWorker(){S.currentWorker=document.getElementById('workerSelect').value;saveLocal();}
-function notify(msg,type){var el=document.getElementById('notification');el.textContent=msg;el.className='notification show'+(type==='error'?' error':type==='info'?' info':'');setTimeout(function(){el.classList.remove('show');},3500);}
+function notify(msg,type){
+    var el=document.getElementById('notification');
+    el.textContent=msg;
+    el.className='notification show'+(type==='error'?' error':type==='info'?' info':'');
+    setTimeout(function(){el.classList.remove('show');},3500);
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 loadLocal();
 if(S.loggedIn){document.getElementById('loginScreen').classList.remove('active');startListeners();}
-else{document.getElementById('loginScreen').classList.add('active');initLogin();} document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('active');});});
+else{document.getElementById('loginScreen').classList.add('active');initLogin();}
+document.querySelectorAll('.modal-overlay').forEach(function(el){
+    el.addEventListener('click',function(e){if(e.target===el) el.classList.remove('active');});
+});
 </script>
 </body>
 </html>
