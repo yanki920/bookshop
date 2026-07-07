@@ -337,9 +337,9 @@ function addBookRow(data){
     var isCustom=currentSupplier&&!stdSuppliers.includes(currentSupplier);
     div.innerHTML=
         '<button type="button" class="remove-book-btn" onclick="this.parentElement.remove();updateTotals();">✕</button>'+
-        '<div class="form-group"><label>Book Title *</label><input type="text" class="b-title" placeholder="Book title" value="'+esc(data.title||')'+'"/></div>'+
+        '<div class="form-group"><label>Book Title *</label><input type="text" class="b-title" placeholder="Book title" value="'+esc(data.title||'')+'"/></div>'+
         '<div class="form-row">'+
-            '<div class="form-group"><label>ISBN / Author</label><input type="text" class="b-isbn" placeholder="ISBN" value="'+esc(data.isbn||')'+'"/></div>'+
+            '<div class="form-group"><label>ISBN / Author</label><input type="text" class="b-isbn" placeholder="ISBN" value="'+esc(data.isbn||'')+'"/></div>'+
             '<div class="form-group"><label>Qty</label><input type="number" class="b-qty" value="'+(data.qty||1)+'" min="1" onchange="updateTotals()"/></div>'+
         '</div>'+
         '<div class="form-row">'+
@@ -355,9 +355,10 @@ function addBookRow(data){
                 '<input type="text" class="b-supplier-custom" placeholder="Type supplier name" value="'+(isCustom?esc(currentSupplier):'')+'" style="margin-top:5px;display:'+(isCustom?'block':'none')+'"/>'+
             '</div>'+
         '</div>'+
-        '<div class="form-group"><label>🔗 Lehmanns Product Link</label><input type="url" class="b-link" placeholder="https://www.lehmanns.co.uk/..." value="'+esc(data.link||')'+'"/></div>';
+        '<div class="form-group"><label>🔗 Lehmanns Product Link</label><input type="url" class="b-link" placeholder="https://www.lehmanns.co.uk/..." value="'+esc(data.link||'')+'"/></div>';
     container.appendChild(div);
     updateTotals();
+}
 }
 
 function saveNewOrder(){
