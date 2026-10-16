@@ -1,0 +1,6 @@
+# Local Netlify folder
+.netlify
+
+# Local development database and backups
+.data/
+.demo/
