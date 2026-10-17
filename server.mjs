@@ -4,9 +4,13 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import {GmailStore,createGmailService} from './integrations/gmail.mjs';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=process.env.BOOKSHOP_DATA_DIR||path.join(root,'.data');
 mkdirSync(data,{recursive:true});
+let gmailMailboxes=String(process.env.GMAIL_MAILBOXES||'').split(',').map(s=>s.trim()).filter(Boolean);
+if(!gmailMailboxes.length){try{gmailMailboxes=JSON.parse(readFileSync(path.join(data,'gmail-mailboxes.json'),'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}}
+const gmail=createGmailService({mailboxes:gmailMailboxes,store:new GmailStore(data)});
 const db=new DatabaseSync(path.join(data,'orders.sqlite'));
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 const all=()=>db.prepare('SELECT document FROM orders ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
@@ -44,6 +48,26 @@ const server=http.createServer(async(req,res)=>{
 const send=(code,value)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value));};
 try{
 const url=new URL(req.url,'http://localhost');
+if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback'){
+ // These administration routes stay local until employee authentication and private hosting exist.
+ const peer=req.socket.remoteAddress;let host;try{host=new URL('http://'+req.headers.host).hostname;}catch{}
+ if(!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(peer)||!['localhost','127.0.0.1','[::1]'].includes(host))return send(403,{error:'Mailbox access requires authenticated private hosting. Local administration only.'});
+ if(req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(403,{error:'Request origin not allowed.'});
+ if(req.method==='GET'&&url.pathname==='/api/gmail/status')return send(200,gmail.status());
+ if(req.method==='GET'&&url.pathname==='/api/gmail/connect')return send(200,{url:gmail.authorizationUrl(url.searchParams.get('email'))});
+ if(req.method==='GET'&&url.pathname==='/oauth/gmail/callback')return send(200,await gmail.completeAuthorization(Object.fromEntries(url.searchParams)));
+ if(req.method==='GET'&&url.pathname==='/api/gmail/messages'){
+  const email=url.searchParams.get('email'),query=url.searchParams.get('query');const result=await gmail.listMessages(email,{query,pageToken:url.searchParams.get('pageToken')});
+  const messages=[];for(const m of result.messages)messages.push(await gmail.getMessage(email,m.id));
+  return send(200,{...result,messages});
+ }
+ if(req.method==='POST'&&url.pathname==='/api/gmail/drafts'){
+  let raw='';for await(const part of req){raw+=part;if(raw.length>100000)return send(413,{error:'Draft too large.'});}
+  let input;try{input=JSON.parse(raw);}catch{return send(400,{error:'Invalid JSON.'});}
+  return send(201,await gmail.createReplyDraft(input.email,{messageId:input.messageId,body:input.body}));
+ }
+ return send(405,{error:'Mailbox operation not supported.'});
+}
 if(url.pathname.startsWith('/api/')){
 if(req.method!=='GET'&&req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(403,{error:'Request origin not allowed.'});
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
@@ -77,6 +101,6 @@ o.version++;o.history.push({at:now(),text:note,by:o.owner});save(o);return send(
 }
 if(req.method!=='GET'||!files[url.pathname]){res.writeHead(404);return res.end('Not found');}
 const name=files[url.pathname];res.writeHead(200,{'Content-Type':name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});res.end(readFileSync(path.join(root,name)));
-}catch(e){send(400,{error:e.message});}
+}catch(e){send(e.status||400,{error:e.message});}
 });
 server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log('Bookshop first version running on port '+(process.env.PORT||3000)));

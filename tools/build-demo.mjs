@@ -17,6 +17,7 @@ const check=o=>{for(const k of ['customer','book','owner'])if(typeof o[k]!=='str
 const nativeFetch=window.fetch;
 window.fetch=async(url,options={})=>{
 if(!String(url).startsWith('/api/'))return nativeFetch(url,options);
+if(String(url).startsWith('/api/gmail/'))return new Response(JSON.stringify({error:'The standalone trial cannot connect mailboxes. Use the privately hosted server app after Google authorisation.'}),{status:503});
 try{
 // Refresh from storage so two tabs do not silently overwrite each other.
 records=JSON.parse(localStorage.getItem(key));
