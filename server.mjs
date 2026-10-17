@@ -1,4 +1,5 @@
 import http from 'node:http';
+import DeliveryModel from './delivery-model.js';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +14,10 @@ if(!gmailMailboxes.length){try{gmailMailboxes=JSON.parse(readFileSync(path.join(
 const gmail=createGmailService({mailboxes:gmailMailboxes,store:new GmailStore(data)});
 const db=new DatabaseSync(path.join(data,'orders.sqlite'));
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
+db.exec('CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
+const invoiceRows=()=>db.prepare('SELECT document FROM invoices ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
+const saveInvoice=o=>db.prepare('INSERT OR REPLACE INTO invoices VALUES (?,?)').run(o.id,JSON.stringify(o));
+if(!db.prepare('SELECT count(*) AS n FROM invoices').get().n)DeliveryModel.samples().forEach(saveInvoice);
 const all=()=>db.prepare('SELECT document FROM orders ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
 const save=o=>db.prepare('INSERT OR REPLACE INTO orders VALUES (?,?)').run(o.id,JSON.stringify(o));
 const now=()=>new Date().toISOString();
@@ -34,7 +39,7 @@ examples.forEach((a,i)=>{const [customer,book,supplier,status,days,channel,payme
 const createdAt=ago(days+1), orderedAt=status==='new'?null:ago(days);
 save({id:randomUUID(),reference:`TF-${1041+i}`,customer,book,supplier,status,channel,payment,quantity,owner,phone:'',email:'',isbn:'',notes:'Sample order — replace with your own workflow.',kind:customer==='Shop stock'?'Stock':'Customer',received:['received','notified','collected'].includes(status)?quantity:0,damaged:0,location:'',createdAt,orderedAt,dispatchedAt:['dispatched','received','notified','collected'].includes(status)?ago(Math.max(0,days-2)):null,receivedAt:['received','notified','collected'].includes(status)?ago(Math.max(0,days-3)):null,version:1,history:[{at:createdAt,text:'Sample order created',by:owner}]});});
 }
-const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css'};
+const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js'};
 function valid(o){
 for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim()||o[k].length>500)throw Error(`Please enter ${k}.`);
 if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Quantity must be between 1 and 10,000.');
@@ -70,11 +75,19 @@ if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback
 }
 if(url.pathname.startsWith('/api/')){
 if(req.method!=='GET'&&req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(403,{error:'Request origin not allowed.'});
+if(req.method==='GET'&&url.pathname==='/api/invoices')return send(200,invoiceRows());
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
-if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all()});}
+if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all(),invoices:invoiceRows()});}
 if(req.method!=='POST')return send(405,{error:'Method not allowed.'});
-let body='';for await(const part of req){body+=part;if(body.length>100000)return send(413,{error:'Request too large.'});}
+let body='';for await(const part of req){body+=part;if(body.length>6000000)return send(413,{error:'Request too large.'});}
 let input;try{input=JSON.parse(body);}catch{return send(400,{error:'Invalid JSON.'});}
+if(url.pathname==='/api/invoices'){
+ const invoice=DeliveryModel.create(input,{id:randomUUID(),at:now()});
+ if(invoiceRows().some(x=>x.supplier.toLowerCase()===invoice.supplier.toLowerCase()&&x.number.toLowerCase()===invoice.number.toLowerCase()))return send(409,{error:'This supplier invoice is already registered.'});
+ saveInvoice(invoice);return send(201,invoice);
+}
+const invoiceMatch=url.pathname.match(/^\/api\/invoices\/([\w-]+)$/);
+if(invoiceMatch){const existing=invoiceRows().find(o=>o.id===invoiceMatch[1]);if(!existing)return send(404,{error:'Invoice not found.'});const invoice=DeliveryModel.update(existing,input,now());saveInvoice(invoice);return send(200,invoice);}
 if(url.pathname==='/api/orders'){
 const o=Object.fromEntries(fields.map(k=>[k,input[k]]));valid(o);
 const existing=all();o.id=randomUUID();o.reference=`TF-${Math.max(1040,...existing.map(x=>Number(x.reference.slice(3))))+1}`;o.status='new';o.createdAt=now();o.orderedAt=null;o.dispatchedAt=null;o.receivedAt=null;o.received=0;o.damaged=0;o.version=1;o.history=[{at:now(),text:'Order created',by:o.owner}];save(o);return send(201,o);

@@ -14,14 +14,17 @@ try{const stored=localStorage.getItem(key);records=stored?JSON.parse(stored):see
 catch(e){document.body.innerHTML='<main><h1>Browser storage is unavailable</h1><p>Open this downloaded HTML file in a regular Chrome or Edge window with local storage enabled. The trial cannot safely save orders in this window.</p></main>';throw e;}
 const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location'];
 const check=o=>{for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim())throw Error('Please enter '+k+'.');if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Check the quantity.');};
+const invoiceKey='tiferes-invoice-trial-v1';
+if(!localStorage.getItem(invoiceKey))localStorage.setItem(invoiceKey,JSON.stringify(DeliveryModel.samples()));
 const nativeFetch=window.fetch;
 window.fetch=async(url,options={})=>{
 if(!String(url).startsWith('/api/'))return nativeFetch(url,options);
+if(String(url).startsWith('/api/invoices')){try{let invoices=JSON.parse(localStorage.getItem(invoiceKey));if(!options.method||options.method==='GET')return new Response(JSON.stringify(invoices));const input=JSON.parse(options.body);let result;if(url==='/api/invoices'){result=DeliveryModel.create(input,{id:'invoice-'+Date.now()+'-'+Math.random().toString(16).slice(2),at:new Date().toISOString()});if(invoices.some(o=>o.supplier.toLowerCase()===result.supplier.toLowerCase()&&o.number.toLowerCase()===result.number.toLowerCase()))throw Error('This supplier invoice is already registered.');invoices.unshift(result);}else{const id=String(url).split('/').at(-1);const index=invoices.findIndex(o=>o.id===id);if(index<0)throw Error('Invoice not found.');result=DeliveryModel.update(invoices[index],input,new Date().toISOString());invoices[index]=result;}localStorage.setItem(invoiceKey,JSON.stringify(invoices));return new Response(JSON.stringify(result),{status:200});}catch(e){return new Response(JSON.stringify({error:e.message}),{status:400});}}
 if(String(url).startsWith('/api/gmail/'))return new Response(JSON.stringify({error:'The standalone trial cannot connect mailboxes. Use the privately hosted server app after Google authorisation.'}),{status:503});
 try{
 // Refresh from storage so two tabs do not silently overwrite each other.
 records=JSON.parse(localStorage.getItem(key));
-if(!options.method||options.method==='GET')return new Response(JSON.stringify(url==='/api/export'?{exportedAt:new Date().toISOString(),orders:records}:records),{status:200});
+if(!options.method||options.method==='GET')return new Response(JSON.stringify(url==='/api/export'?{exportedAt:new Date().toISOString(),orders:records,invoices:JSON.parse(localStorage.getItem(invoiceKey))}:records),{status:200});
 const input=JSON.parse(options.body),at=new Date().toISOString();let result;
 if(url==='/api/orders'){
 const o=Object.fromEntries(fields.map(k=>[k,input[k]]));check(o);Object.assign(o,{id:crypto.randomUUID?crypto.randomUUID():'trial-'+Date.now()+'-'+Math.random().toString(16).slice(2),reference:'TF-'+(Math.max(1040,...records.map(x=>Number(x.reference.slice(3))))+1),status:'new',createdAt:at,orderedAt:null,dispatchedAt:null,receivedAt:null,received:0,damaged:0,version:1,history:[{at,text:'Order created in standalone trial',by:o.owner}]});records.unshift(o);result=o;
@@ -42,17 +45,18 @@ o.version++;o.history.push({at,text,by:o.owner});result=o;
 localStorage.setItem(key,JSON.stringify(records));return new Response(JSON.stringify(result),{status:url==='/api/orders'?201:200});
 }catch(e){return new Response(JSON.stringify({error:e.message}),{status:400});}
 };
-window.downloadTrialExport=()=>{const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),orders:JSON.parse(localStorage.getItem(key))},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tiferes-trial-orders.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+window.downloadTrialExport=()=>{const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),orders:JSON.parse(localStorage.getItem(key)),invoices:JSON.parse(localStorage.getItem(invoiceKey))},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tiferes-trial-orders.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
 document.addEventListener('click',e=>{if(e.target.closest('a[href="/api/export"]')){e.preventDefault();downloadTrialExport();}});
 })();`;
 let html=readFileSync(path.join(root,'index.html'),'utf8');
+const model=readFileSync(path.join(root,'delivery-model.js'),'utf8');
 const css=readFileSync(path.join(root,'styles.css'),'utf8');
 let app=readFileSync(path.join(root,'app.js'),'utf8');
 app=app.replaceAll("location.assign('/api/export')","downloadTrialExport()").replaceAll('Saved to this workspace','Saved in this browser only');
-html=html.replace('<link rel="stylesheet" href="/styles.css">','<style>'+css+'</style>').replace('<script defer src="/app.js"></script>','');
+html=html.replace('<link rel="stylesheet" href="/styles.css">','<style>'+css+'</style>').replace('<script defer src="/app.js"></script>','').replace('<script defer src="/delivery-model.js"></script>','');
 html=html.replace('Local workspace saved','Saved in this browser').replace('First version · sample workspace','Standalone trial · sample data').replace('Saved to this workspace','Saved in this browser only').replace('Try the full order journey with sample records. Gmail, Erply and message sending are not connected.','Standalone trial: sample orders save in this browser only, not across devices. No accounts are connected and no messages are sent.').replace('This version saves orders in a local shared database. Live service connections are the next implementation step.','This downloaded trial saves orders only in this browser on this computer. It does not connect to the shared database, Erply, Gmail or messaging accounts. Use sample data only. Clearing browser storage removes trial changes.');
 html=html.replace('href="/" aria-label="Tiferes home"','href="#" aria-label="Tiferes home"');
-html=html.replace('</body>','<script>'+offline+'\n'+app.replaceAll('</script','<\\/script')+'</script></body>');
+html=html.replace('</body>',()=>'<script>'+model+'\n'+offline+'\n'+app.replaceAll('</script','<\\/script')+'</script></body>');
 writeFileSync(path.join(out,'Tiferes-Trial.html'),html);
 writeFileSync(path.join(out,'START-HERE.txt'),'TIFERES BOOKSHOP — INTERACTIVE TRIAL\n\nDouble-click Tiferes-Trial.html and open it in Chrome or Edge. No installation, account or internet connection is needed.\n\nTry: New order -> Create order -> Place order -> Record dispatch -> Check in delivery -> Try notification.\n\nThis is a standalone trial, not the live shop system. Use fictional details only. Records save in this browser on this computer, not across devices. Do not use private/incognito mode. Clearing browser storage removes trial changes. Export saves a JSON copy; importing it is not implemented. Notifications are simulations: no messages are sent. Your original website and Firebase data are untouched.\n');
 console.log('Created interactive trial in '+out);
