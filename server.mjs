@@ -1,5 +1,6 @@
 import http from 'node:http';
 import DeliveryModel from './delivery-model.js';
+import TeamModel from './team-model.js';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +20,10 @@ db.exec('CREATE TABLE IF NOT EXISTS invoice_allocations (invoice_id TEXT PRIMARY
 const allocationRows=()=>db.prepare('SELECT document FROM invoice_allocations').all().map(r=>JSON.parse(r.document));
 const storeAllocations=a=>db.prepare('INSERT OR REPLACE INTO invoice_allocations VALUES (?,?)').run(a.invoiceId,JSON.stringify(a));
 if(!db.prepare('SELECT count(*) AS n FROM invoice_allocations').get().n)DeliveryModel.allocationSamples().forEach(storeAllocations);
+db.exec('CREATE TABLE IF NOT EXISTS team_workspace (id INTEGER PRIMARY KEY CHECK(id=1), document TEXT NOT NULL)');
+const teamState=()=>{const row=db.prepare('SELECT document FROM team_workspace WHERE id=1').get();return row?JSON.parse(row.document):null;};
+const saveTeam=state=>db.prepare('INSERT OR REPLACE INTO team_workspace VALUES (1,?)').run(JSON.stringify(state));
+if(!teamState())saveTeam(TeamModel.samples());
 const invoiceRows=()=>db.prepare('SELECT document FROM invoices ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
 const saveInvoice=o=>db.prepare('INSERT OR REPLACE INTO invoices VALUES (?,?)').run(o.id,JSON.stringify(o));
 if(!db.prepare('SELECT count(*) AS n FROM invoices').get().n)DeliveryModel.samples().forEach(saveInvoice);
@@ -44,7 +49,7 @@ examples.forEach((a,i)=>{const [customer,book,supplier,status,days,channel,payme
 const createdAt=ago(days+1), orderedAt=status==='new'?null:ago(days);
 save({id:randomUUID(),reference:`TF-${1041+i}`,customer,book,supplier,status,channel,payment,quantity,owner,phone:'',email:'',isbn:'',notes:'Sample order — replace with your own workflow.',kind:customer==='Shop stock'?'Stock':'Customer',received:['received','notified','collected'].includes(status)?quantity:0,damaged:0,location:'',createdAt,orderedAt,dispatchedAt:['dispatched','received','notified','collected'].includes(status)?ago(Math.max(0,days-2)):null,receivedAt:['received','notified','collected'].includes(status)?ago(Math.max(0,days-3)):null,version:1,history:[{at:createdAt,text:'Sample order created',by:owner}]});});
 }
-const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js'};
+const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js'};
 function valid(o){
 for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim()||o[k].length>500)throw Error(`Please enter ${k}.`);
 if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Quantity must be between 1 and 10,000.');
@@ -80,6 +85,7 @@ if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback
 }
 if(url.pathname.startsWith('/api/')){
 if(req.method!=='GET'&&req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(403,{error:'Request origin not allowed.'});
+if(req.method==='GET'&&url.pathname==='/api/team')return send(200,TeamModel.forActor(teamState(),url.searchParams.get('actor')||'sarah'));
 if(req.method==='GET'&&url.pathname.startsWith('/api/invoice-allocations/')){const id=url.pathname.split('/').at(-1);return send(200,allocationRows().find(a=>a.invoiceId===id)||{invoiceId:id,version:0,rows:[]});}
 if(req.method==='GET'&&url.pathname==='/api/invoices')return send(200,invoiceRows());
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
@@ -87,6 +93,7 @@ if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disp
 if(req.method!=='POST')return send(405,{error:'Method not allowed.'});
 let body='';for await(const part of req){body+=part;if(body.length>6000000)return send(413,{error:'Request too large.'});}
 let input;try{input=JSON.parse(body);}catch{return send(400,{error:'Invalid JSON.'});}
+if(url.pathname==='/api/team'){const result=TeamModel.apply(teamState(),input,{id:randomUUID(),at:now()});saveTeam(result.state);return send(200,{workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId});}
 const allocationMatch=url.pathname.match(/^\/api\/invoice-allocations\/([\w-]+)$/);
 if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1]);if(!invoice)return send(404,{error:'Invoice not found.'});const existing=allocationRows().find(a=>a.invoiceId===invoice.id)||{invoiceId:invoice.id,version:0,rows:[]};const result=DeliveryModel.saveAllocations(invoice,existing,input);storeAllocations(result);return send(200,result);}
 if(url.pathname==='/api/invoices'){
