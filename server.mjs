@@ -79,11 +79,9 @@ if(url.pathname==='/api/auth/login'||url.pathname==='/api/auth/setup'||url.pathn
  if(url.pathname==='/api/auth/users'){if(identity?.role!=='manager')return send(403,{error:'Manager access required.'});const user=auth.addUser(input);const workspace=teamState();if(!workspace.workers.some(w=>w.id===user.id))workspace.workers.push({id:user.id,name:user.name,role:user.role});else workspace.workers.find(w=>w.id===user.id).name=user.name;workspace.version++;saveTeam(workspace);return send(201,user);}
  const result=auth.login(input,req.socket.remoteAddress+':'+String(input.id||'').trim().toLowerCase());res.setHeader('Set-Cookie',cookie(result.token,28800));return send(200,{user:result.user,demo:false});
 }
-if(url.pathname.startsWith('/api/')||url.pathname==='/oauth/gmail/callback'){
- if(!identity)return send(401,{error:'Sign in to continue.'});
- const area=url.pathname.startsWith('/api/team')?'team':url.pathname.startsWith('/api/invoice')?'deliveries':'orders';
- if(identity.role!=='manager'&&!identity.permissions.includes(area))return send(403,{error:'You do not have access to this area.'});
- if((url.pathname==='/api/export'||url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback')&&identity.role!=='manager')return send(403,{error:'Manager access required.'});
+if(url.pathname.startsWith('/api/team')||url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback'){
+ if(!identity)return send(401,{error:'Sign in to Tasks & Chat to continue.'});
+ if(!url.pathname.startsWith('/api/team')&&identity.role!=='manager')return send(403,{error:'Manager access required.'});
 }
 
 if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback'){
@@ -119,7 +117,7 @@ let input;try{input=JSON.parse(body);}catch{return send(400,{error:'Invalid JSON
 if(url.pathname==='/api/team'){input.actor=identity.id;const result=TeamModel.apply(teamState(),input,{id:randomUUID(),at:now()});saveTeam(result.state);return send(200,{workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId});}
 const allocationMatch=url.pathname.match(/^\/api\/invoice-allocations\/([\w-]+)$/);
 if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1]);if(!invoice)return send(404,{error:'Invoice not found.'});const existing=allocationRows().find(a=>a.invoiceId===invoice.id)||{invoiceId:invoice.id,version:0,rows:[]};const result=DeliveryModel.saveAllocations(invoice,existing,input);storeAllocations(result);return send(200,result);}
-if(url.pathname.startsWith('/api/invoices'))input.worker=identity.name;
+// Invoice checkers enter their name in the shared delivery area.
 if(url.pathname==='/api/invoices'){
  const invoice=DeliveryModel.create(input,{id:randomUUID(),at:now()});
  if(invoiceRows().some(x=>x.supplier.toLowerCase()===invoice.supplier.toLowerCase()&&x.number.toLowerCase()===invoice.number.toLowerCase()))return send(409,{error:'This supplier invoice is already registered.'});
