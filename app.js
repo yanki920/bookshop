@@ -104,4 +104,14 @@ $('#print-invoice-labels').onclick=()=>{try{if(JSON.stringify(collect())!==JSON.
 }draw();}catch(e){toast(e.message);}}
 
 let printReturnDialogs=[];
-function showPrintPreview(){printReturnDialogs=[...document.querySelectorAll('dialog[open]')].map(d=>d.id);for(const id of printReturnDialogs)$('#'+id).close();const markup=$('#print-area').innerHTML;if(!markup.trim())return toast('No labels or report are ready to print.');$('#print-preview').innerHTML='<div class="print-preview-controls"><div><h1>Print preview</h1><p>Check the labels below. Choose your printer and paper size in the print dialog. If it does not open, press Ctrl+P (Mac: Cmd+P).</p></div><button class="secondary" id="close-print-preview">← Back</button><button class="primary" id="confirm-print">Print / Save PDF</button></div><div class="print-preview-paper">'+markup+'</div>';$('#print-preview').hidden=false;document.body.classList.add('printing-preview');$('#confirm-print').onclick=()=>window.print();$('#close-print-preview').onclick=()=>{$('#print-preview').hidden=true;document.body.classList.remove('printing-preview');for(const id of printReturnDialogs)if(!$('#'+id).open)$('#'+id).showModal();};window.scrollTo(0,0);}
+function showPrintPreview(){
+ const markup=$('#print-area').innerHTML;if(!markup.trim())return toast('No labels or report are ready to print.');
+ let pageStyle=$('#sticker-page-size');if(!pageStyle){pageStyle=document.createElement('style');pageStyle.id='sticker-page-size';document.head.append(pageStyle);}
+ const stickers=$('#print-area .label')!==null;pageStyle.textContent=stickers?'@page{size:60mm 30mm;margin:0}':'';
+ printReturnDialogs=[...document.querySelectorAll('dialog[open]')].map(d=>d.id);for(const id of printReturnDialogs)$('#'+id).close();
+ $('#print-preview').innerHTML=`<div class="print-preview-controls"><div><h1>Print preview</h1><p>${stickers?'Stickers: 6 cm wide × 3 cm high. Select 60 × 30 mm paper, scale 100% (actual size), and turn off headers and footers.':'Choose your printer and paper size in the print dialog.'} If it does not open, press Ctrl+P (Mac: Cmd+P).</p></div><button class="secondary" id="close-print-preview">← Back</button><button class="primary" id="confirm-print">Print / Save PDF</button></div><div class="print-preview-paper">${markup}</div>`;
+ $('#print-preview').hidden=false;document.body.classList.add('printing-preview');
+ // Fit screen and printed text independently without increasing the sticker dimensions.
+ document.querySelectorAll('.print-preview-paper .label').forEach((label,index)=>{let size=9;label.style.fontSize=size+'pt';while(label.scrollHeight>label.clientHeight+1&&size>6){size-=.25;label.style.fontSize=size+'pt';}document.querySelectorAll('#print-area .label')[index].style.fontSize=size+'pt';});
+ $('#confirm-print').onclick=()=>window.print();$('#close-print-preview').onclick=()=>{$('#print-preview').hidden=true;document.body.classList.remove('printing-preview');pageStyle.textContent='';for(const id of printReturnDialogs)if(!$('#'+id).open)$('#'+id).showModal();};window.scrollTo(0,0);
+}

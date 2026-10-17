@@ -120,7 +120,7 @@ Customer-order, invoice, allocation and business export routes do not require a 
 
 Direct conversations now offer Send as Message or Task with a deadline. Sending as Task atomically creates an assigned task and a conversation card; the recipient can open it from messages or My tasks.
 
-Label/report printing now opens a full-page preview after closing modal dialogs. Print / Save PDF invokes the browser dialog; Ctrl+P / Cmd+P is also available. Browser checks generated a real A4 PDF and extracted its text: three sample labels contained D. Cohen once and R. Adler twice, with product, invoice and shelf details, and no application navigation. Physical printer output and thermal printer dimensions have not been tested.
+Label/report printing now opens a full-page preview after closing modal dialogs. Print / Save PDF invokes the browser dialog; Ctrl+P / Cmd+P is also available. Browser checks generated a real A4 PDF and extracted its text: three sample labels contained D. Cohen once and R. Adler twice, with product, invoice and shelf details, and no application navigation. Customer stickers use fixed 60 mm × 30 mm boxes and one sticker per 60 mm × 30 mm printed page. Choose 100% / actual size and disable browser headers and footers. Text shrinks to fit; long names and product titles are limited to two lines. Physical printer output has not been tested.
 
 The standalone trial has separate, public demonstration credentials (for example manager / manager-demo-123 and sarah / sarah-demo-123). It stores a simulated sign-in in sessionStorage; these credentials must never be used on the real server. Creating real accounts is intentionally unavailable in the public trial.
 
