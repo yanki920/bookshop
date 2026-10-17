@@ -1,3 +1,4 @@
+import {ownerCookie} from './auth-helper.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -7,10 +8,10 @@ import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 const dir=mkdtempSync(path.join(tmpdir(),'bookshop-test-'));
 const port=3300+Math.floor(Math.random()*1000),base=`http://127.0.0.1:${port}`;
-let child;
-async function start(){child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:String(port),BOOKSHOP_DATA_DIR:dir},stdio:['ignore','pipe','pipe']});await Promise.race([once(child.stdout,'data'),once(child,'exit').then(([code])=>{throw Error('Server failed: '+code)})]);}
+let child,cookie;
+async function start(){child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:String(port),BOOKSHOP_DATA_DIR:dir},stdio:['ignore','pipe','pipe']});await Promise.race([once(child.stdout,'data'),once(child,'exit').then(([code])=>{throw Error('Server failed: '+code)})]);cookie=await ownerCookie(base);}
 async function stop(){child.kill();await once(child,'exit');}
-async function request(route,body){const r=await fetch(base+route,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});return {status:r.status,data:await r.json()};}
+async function request(route,body){const r=await fetch(base+route,body?{method:'POST',headers:{'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify(body)}:{headers:{Cookie:cookie}});return {status:r.status,data:await r.json()};}
 const input={customer:'Test customer',book:'Test sefer',owner:'Test worker',quantity:2,kind:'Customer',channel:'SMS',payment:'Unpaid',supplier:'Lehmanns',phone:'',email:'',isbn:'',notes:'',location:''};
 test('persisted order journey, partial delivery, concurrency and payment guards',async()=>{try{
 await start();let r=await request('/api/orders',input);assert.equal(r.status,201);let o=r.data;const id=o.id;

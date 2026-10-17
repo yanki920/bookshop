@@ -1,6 +1,7 @@
 import http from 'node:http';
 import DeliveryModel from './delivery-model.js';
 import TeamModel from './team-model.js';
+import {createAuth} from './auth.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -14,6 +15,7 @@ let gmailMailboxes=String(process.env.GMAIL_MAILBOXES||'').split(',').map(s=>s.t
 if(!gmailMailboxes.length){try{gmailMailboxes=JSON.parse(readFileSync(path.join(data,'gmail-mailboxes.json'),'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}}
 const gmail=createGmailService({mailboxes:gmailMailboxes,store:new GmailStore(data)});
 const db=new DatabaseSync(path.join(data,'orders.sqlite'));
+const auth=createAuth(db);
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 db.exec('CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 db.exec('CREATE TABLE IF NOT EXISTS invoice_allocations (invoice_id TEXT PRIMARY KEY, document TEXT NOT NULL)');
@@ -49,7 +51,7 @@ examples.forEach((a,i)=>{const [customer,book,supplier,status,days,channel,payme
 const createdAt=ago(days+1), orderedAt=status==='new'?null:ago(days);
 save({id:randomUUID(),reference:`TF-${1041+i}`,customer,book,supplier,status,channel,payment,quantity,owner,phone:'',email:'',isbn:'',notes:'Sample order — replace with your own workflow.',kind:customer==='Shop stock'?'Stock':'Customer',received:['received','notified','collected'].includes(status)?quantity:0,damaged:0,location:'',createdAt,orderedAt,dispatchedAt:['dispatched','received','notified','collected'].includes(status)?ago(Math.max(0,days-2)):null,receivedAt:['received','notified','collected'].includes(status)?ago(Math.max(0,days-3)):null,version:1,history:[{at:createdAt,text:'Sample order created',by:owner}]});});
 }
-const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js'};
+const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js','/auth-ui.js':'auth-ui.js'};
 function valid(o){
 for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim()||o[k].length>500)throw Error(`Please enter ${k}.`);
 if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Quantity must be between 1 and 10,000.');
@@ -63,6 +65,27 @@ const server=http.createServer(async(req,res)=>{
 const send=(code,value)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value));};
 try{
 const url=new URL(req.url,'http://localhost');
+const publicOrigin=process.env.BOOKSHOP_PUBLIC_ORIGIN||`http://${req.headers.host}`;
+if(!['GET','HEAD'].includes(req.method)&&req.headers.origin&&req.headers.origin!==publicOrigin)return send(403,{error:'Request origin not allowed.'});
+const token=req.headers.cookie?.match(/(?:^|;\s*)bookshop_session=([a-f0-9]{64})(?:;|$)/)?.[1];
+const identity=auth.fromToken(token);
+const cookie=(value,age)=>`bookshop_session=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${publicOrigin.startsWith('https:')?'; Secure':''}`;
+if(url.pathname==='/api/auth/status'&&req.method==='GET')return send(200,{user:identity,needsSetup:!auth.hasUsers(),demo:false});
+if(url.pathname==='/api/auth/login'||url.pathname==='/api/auth/setup'||url.pathname==='/api/auth/logout'||url.pathname==='/api/auth/users'){
+ if(req.method==='GET'&&url.pathname==='/api/auth/users'){if(identity?.role!=='manager')return send(403,{error:'Manager access required.'});return send(200,auth.listUsers());}
+ if(req.method!=='POST')return send(405,{error:'Method not allowed.'});let raw='';for await(const part of req){raw+=part;if(raw.length>20000)return send(413,{error:'Request too large.'});}let input;try{input=JSON.parse(raw);}catch{return send(400,{error:'Invalid JSON.'});}
+ if(url.pathname==='/api/auth/logout'){auth.logout(token);res.setHeader('Set-Cookie',cookie('',0));return send(200,{signedOut:true});}
+ if(url.pathname==='/api/auth/setup'){const peer=req.socket.remoteAddress,host=new URL('http://'+req.headers.host).hostname;if(!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(peer)||!['localhost','127.0.0.1','[::1]'].includes(host))return send(403,{error:'The owner account must be initialised locally before deployment.'});auth.setup(input);input.id='manager';}
+ if(url.pathname==='/api/auth/users'){if(identity?.role!=='manager')return send(403,{error:'Manager access required.'});const user=auth.addUser(input);const workspace=teamState();if(!workspace.workers.some(w=>w.id===user.id))workspace.workers.push({id:user.id,name:user.name,role:user.role});else workspace.workers.find(w=>w.id===user.id).name=user.name;workspace.version++;saveTeam(workspace);return send(201,user);}
+ const result=auth.login(input,req.socket.remoteAddress+':'+String(input.id||'').trim().toLowerCase());res.setHeader('Set-Cookie',cookie(result.token,28800));return send(200,{user:result.user,demo:false});
+}
+if(url.pathname.startsWith('/api/')||url.pathname==='/oauth/gmail/callback'){
+ if(!identity)return send(401,{error:'Sign in to continue.'});
+ const area=url.pathname.startsWith('/api/team')?'team':url.pathname.startsWith('/api/invoice')?'deliveries':'orders';
+ if(identity.role!=='manager'&&!identity.permissions.includes(area))return send(403,{error:'You do not have access to this area.'});
+ if((url.pathname==='/api/export'||url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback')&&identity.role!=='manager')return send(403,{error:'Manager access required.'});
+}
+
 if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback'){
  // These administration routes stay local until employee authentication and private hosting exist.
  const peer=req.socket.remoteAddress;let host;try{host=new URL('http://'+req.headers.host).hostname;}catch{}
@@ -85,7 +108,7 @@ if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback
 }
 if(url.pathname.startsWith('/api/')){
 if(req.method!=='GET'&&req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(403,{error:'Request origin not allowed.'});
-if(req.method==='GET'&&url.pathname==='/api/team')return send(200,TeamModel.forActor(teamState(),url.searchParams.get('actor')||'sarah'));
+if(req.method==='GET'&&url.pathname==='/api/team')return send(200,TeamModel.forActor(teamState(),identity.id));
 if(req.method==='GET'&&url.pathname.startsWith('/api/invoice-allocations/')){const id=url.pathname.split('/').at(-1);return send(200,allocationRows().find(a=>a.invoiceId===id)||{invoiceId:id,version:0,rows:[]});}
 if(req.method==='GET'&&url.pathname==='/api/invoices')return send(200,invoiceRows());
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
@@ -93,9 +116,10 @@ if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disp
 if(req.method!=='POST')return send(405,{error:'Method not allowed.'});
 let body='';for await(const part of req){body+=part;if(body.length>6000000)return send(413,{error:'Request too large.'});}
 let input;try{input=JSON.parse(body);}catch{return send(400,{error:'Invalid JSON.'});}
-if(url.pathname==='/api/team'){const result=TeamModel.apply(teamState(),input,{id:randomUUID(),at:now()});saveTeam(result.state);return send(200,{workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId});}
+if(url.pathname==='/api/team'){input.actor=identity.id;const result=TeamModel.apply(teamState(),input,{id:randomUUID(),at:now()});saveTeam(result.state);return send(200,{workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId});}
 const allocationMatch=url.pathname.match(/^\/api\/invoice-allocations\/([\w-]+)$/);
 if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1]);if(!invoice)return send(404,{error:'Invoice not found.'});const existing=allocationRows().find(a=>a.invoiceId===invoice.id)||{invoiceId:invoice.id,version:0,rows:[]};const result=DeliveryModel.saveAllocations(invoice,existing,input);storeAllocations(result);return send(200,result);}
+if(url.pathname.startsWith('/api/invoices'))input.worker=identity.name;
 if(url.pathname==='/api/invoices'){
  const invoice=DeliveryModel.create(input,{id:randomUUID(),at:now()});
  if(invoiceRows().some(x=>x.supplier.toLowerCase()===invoice.supplier.toLowerCase()&&x.number.toLowerCase()===invoice.number.toLowerCase()))return send(409,{error:'This supplier invoice is already registered.'});
