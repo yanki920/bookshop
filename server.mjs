@@ -15,9 +15,14 @@ const gmail=createGmailService({mailboxes:gmailMailboxes,store:new GmailStore(da
 const db=new DatabaseSync(path.join(data,'orders.sqlite'));
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 db.exec('CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
+db.exec('CREATE TABLE IF NOT EXISTS invoice_allocations (invoice_id TEXT PRIMARY KEY, document TEXT NOT NULL)');
+const allocationRows=()=>db.prepare('SELECT document FROM invoice_allocations').all().map(r=>JSON.parse(r.document));
+const storeAllocations=a=>db.prepare('INSERT OR REPLACE INTO invoice_allocations VALUES (?,?)').run(a.invoiceId,JSON.stringify(a));
+if(!db.prepare('SELECT count(*) AS n FROM invoice_allocations').get().n)DeliveryModel.allocationSamples().forEach(storeAllocations);
 const invoiceRows=()=>db.prepare('SELECT document FROM invoices ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
 const saveInvoice=o=>db.prepare('INSERT OR REPLACE INTO invoices VALUES (?,?)').run(o.id,JSON.stringify(o));
 if(!db.prepare('SELECT count(*) AS n FROM invoices').get().n)DeliveryModel.samples().forEach(saveInvoice);
+if(!invoiceRows().some(o=>o.id==='invoice-label-demo')){saveInvoice(DeliveryModel.samples().find(o=>o.id==='invoice-label-demo'));storeAllocations(DeliveryModel.allocationSamples().find(a=>a.invoiceId==='invoice-label-demo'));}
 const all=()=>db.prepare('SELECT document FROM orders ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
 const save=o=>db.prepare('INSERT OR REPLACE INTO orders VALUES (?,?)').run(o.id,JSON.stringify(o));
 const now=()=>new Date().toISOString();
@@ -75,19 +80,22 @@ if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback
 }
 if(url.pathname.startsWith('/api/')){
 if(req.method!=='GET'&&req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(403,{error:'Request origin not allowed.'});
+if(req.method==='GET'&&url.pathname.startsWith('/api/invoice-allocations/')){const id=url.pathname.split('/').at(-1);return send(200,allocationRows().find(a=>a.invoiceId===id)||{invoiceId:id,version:0,rows:[]});}
 if(req.method==='GET'&&url.pathname==='/api/invoices')return send(200,invoiceRows());
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
-if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all(),invoices:invoiceRows()});}
+if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all(),invoices:invoiceRows(),invoiceAllocations:allocationRows()});}
 if(req.method!=='POST')return send(405,{error:'Method not allowed.'});
 let body='';for await(const part of req){body+=part;if(body.length>6000000)return send(413,{error:'Request too large.'});}
 let input;try{input=JSON.parse(body);}catch{return send(400,{error:'Invalid JSON.'});}
+const allocationMatch=url.pathname.match(/^\/api\/invoice-allocations\/([\w-]+)$/);
+if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1]);if(!invoice)return send(404,{error:'Invoice not found.'});const existing=allocationRows().find(a=>a.invoiceId===invoice.id)||{invoiceId:invoice.id,version:0,rows:[]};const result=DeliveryModel.saveAllocations(invoice,existing,input);storeAllocations(result);return send(200,result);}
 if(url.pathname==='/api/invoices'){
  const invoice=DeliveryModel.create(input,{id:randomUUID(),at:now()});
  if(invoiceRows().some(x=>x.supplier.toLowerCase()===invoice.supplier.toLowerCase()&&x.number.toLowerCase()===invoice.number.toLowerCase()))return send(409,{error:'This supplier invoice is already registered.'});
  saveInvoice(invoice);return send(201,invoice);
 }
 const invoiceMatch=url.pathname.match(/^\/api\/invoices\/([\w-]+)$/);
-if(invoiceMatch){const existing=invoiceRows().find(o=>o.id===invoiceMatch[1]);if(!existing)return send(404,{error:'Invoice not found.'});const invoice=DeliveryModel.update(existing,input,now());saveInvoice(invoice);return send(200,invoice);}
+if(invoiceMatch){const existing=invoiceRows().find(o=>o.id===invoiceMatch[1]);if(!existing)return send(404,{error:'Invoice not found.'});const invoice=DeliveryModel.update(existing,input,now());const assigned=allocationRows().find(a=>a.invoiceId===invoice.id);if(assigned)DeliveryModel.saveAllocations(invoice,assigned,{version:assigned.version,rows:assigned.rows});saveInvoice(invoice);return send(200,invoice);}
 if(url.pathname==='/api/orders'){
 const o=Object.fromEntries(fields.map(k=>[k,input[k]]));valid(o);
 const existing=all();o.id=randomUUID();o.reference=`TF-${Math.max(1040,...existing.map(x=>Number(x.reference.slice(3))))+1}`;o.status='new';o.createdAt=now();o.orderedAt=null;o.dispatchedAt=null;o.receivedAt=null;o.received=0;o.damaged=0;o.version=1;o.history=[{at:now(),text:'Order created',by:o.owner}];save(o);return send(201,o);
