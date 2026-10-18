@@ -21,3 +21,5 @@ body{font-size:16px}p{font-size:15px;line-height:1.6}h1{font-size:42px}h2{font-s
 .print-preview-paper .label p:first-of-type,#print-area .label p:first-of-type{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
 .print-preview-paper .label small,#print-area .label small{font-size:.85em;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
 @media print{#print-area .label{display:block;border:0;margin:0;break-inside:avoid;break-after:page;page-break-after:always;}#print-area .label:last-child{break-after:auto;page-break-after:auto;}}
+
+.form-grid > label[hidden]{display:none!important}
