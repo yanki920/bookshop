@@ -12,7 +12,7 @@ function seed(){return examples.map(([customer,book,supplier,status,d,channel,pa
 let records;
 try{const stored=localStorage.getItem(key);records=stored?JSON.parse(stored):seed();if(!Array.isArray(records))throw Error('Invalid trial records.');localStorage.setItem(key,JSON.stringify(records));}
 catch(e){document.body.innerHTML='<main><h1>Browser storage is unavailable</h1><p>Open this downloaded HTML file in a regular Chrome or Edge window with local storage enabled. The trial cannot safely save orders in this window.</p></main>';throw e;}
-const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location'];
+const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location','productType','custom','neededBy'];
 const check=o=>{for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim())throw Error('Please enter '+k+'.');if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Check the quantity.');};
 const invoiceKey='tiferes-invoice-trial-v1';
 if(!localStorage.getItem(invoiceKey))localStorage.setItem(invoiceKey,JSON.stringify(DeliveryModel.samples()));
@@ -28,6 +28,7 @@ const demoIdentity=()=>demoUsers.find(u=>u.id===trialUser)||null;
 const nativeFetch=window.fetch;
 window.fetch=async(url,options={})=>{
 if(!String(url).startsWith('/api/'))return nativeFetch(url,options);
+if(url==='/api/order-workers')return new Response(JSON.stringify(JSON.parse(localStorage.getItem(teamKey)).workers.map(w=>({id:w.id,name:w.name}))));
 if(String(url).startsWith('/api/auth/')){const route=String(url).split('?')[0];if(route==='/api/auth/status')return new Response(JSON.stringify({user:demoIdentity(),needsSetup:false,demo:true}));if(route==='/api/auth/logout'){trialUser=null;sessionStorage.removeItem('tiferes-demo-session-v1');return new Response(JSON.stringify({signedOut:true}));}if(route==='/api/auth/users'){if(demoIdentity()?.role!=='manager')return new Response(JSON.stringify({error:'Manager access required.'}),{status:403});if(options.method==='POST')return new Response(JSON.stringify({error:'Create real accounts only in the private server version. This trial uses fixed sample logins.'}),{status:503});return new Response(JSON.stringify(demoUsers));}if(route==='/api/auth/login'){const input=JSON.parse(options.body);const user=demoUsers.find(u=>u.id===String(input.id).trim().toLowerCase());if(!user||input.password!==user.id+'-demo-123')return new Response(JSON.stringify({error:'Use one of the sample accounts shown on the trial sign-in screen.'}),{status:401});trialUser=user.id;sessionStorage.setItem('tiferes-demo-session-v1',trialUser);return new Response(JSON.stringify({user,demo:true}));}return new Response(JSON.stringify({error:'Not available in the public trial.'}),{status:400});}
 if(String(url).startsWith('/api/team')&&!demoIdentity())return new Response(JSON.stringify({error:'Sign in to Tasks & Chat.'}),{status:401});
 if(String(url).startsWith('/api/team')){try{const state=JSON.parse(localStorage.getItem(teamKey));if(!options.method||options.method==='GET'){const actor=trialUser;return new Response(JSON.stringify(TeamModel.forActor(state,actor)));}const input={...JSON.parse(options.body),actor:trialUser},result=TeamModel.apply(state,input,{id:'team-'+Date.now()+'-'+Math.random().toString(16).slice(2),at:new Date().toISOString()});localStorage.setItem(teamKey,JSON.stringify(result.state));return new Response(JSON.stringify({workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId}));}catch(e){return new Response(JSON.stringify({error:e.message}),{status:400});}}
@@ -40,12 +41,13 @@ records=JSON.parse(localStorage.getItem(key));
 if(!options.method||options.method==='GET')return new Response(JSON.stringify(url==='/api/export'?{exportedAt:new Date().toISOString(),orders:records,invoices:JSON.parse(localStorage.getItem(invoiceKey)),invoiceAllocations:JSON.parse(localStorage.getItem(allocationKey))}:records),{status:200});
 const input=JSON.parse(options.body),at=new Date().toISOString();let result;
 if(url==='/api/orders'){
-const o=Object.fromEntries(fields.map(k=>[k,input[k]]));check(o);Object.assign(o,{id:crypto.randomUUID?crypto.randomUUID():'trial-'+Date.now()+'-'+Math.random().toString(16).slice(2),reference:'TF-'+(Math.max(1040,...records.map(x=>Number(x.reference.slice(3))))+1),status:'new',createdAt:at,orderedAt:null,dispatchedAt:null,receivedAt:null,received:0,damaged:0,version:1,history:[{at,text:'Order created in standalone trial',by:o.owner}]});records.unshift(o);result=o;
+const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOrders.normalize(o));check(o);Object.assign(o,{id:crypto.randomUUID?crypto.randomUUID():'trial-'+Date.now()+'-'+Math.random().toString(16).slice(2),reference:'TF-'+(Math.max(1040,...records.map(x=>Number(x.reference.slice(3))))+1),status:'new',createdAt:at,orderedAt:null,dispatchedAt:null,receivedAt:null,received:0,damaged:0,version:1,history:[{at,text:'Order created in standalone trial',by:o.owner}]});records.unshift(o);result=o;
 }else{
 const id=String(url).split('/').at(-1),o=records.find(r=>r.id===id);if(!o)throw Error('Order not found.');if(input.version!==o.version)return new Response(JSON.stringify({error:'Another tab updated this order. Reload and try again.'}),{status:409});let text='';
 switch(input.action){
-case 'edit':for(const k of fields)if(k in input)o[k]=input[k];check(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods checked in.');text='Order details updated';break;
+case 'edit':for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o));check(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods checked in.');text='Order details updated';break;
 case 'order':if(o.status!=='new'||!input.supplier)throw Error('Choose a supplier for this new order.');o.supplier=input.supplier;o.status='ordered';o.orderedAt=at;text='Order placement recorded with '+o.supplier+' (no email sent)';break;
+case 'supplier-confirmed':case 'supplier-ready':text=CustomOrders.progress(o,input.action,at);break;
 case 'dispatch':if(o.status!=='ordered')throw Error('Place the order first.');o.status='dispatched';o.dispatchedAt=at;text=o.supplier==='Friedman'?'Invoice recorded manually · dispatched':'Dispatch recorded manually';break;
 case 'receive':{if(!['ordered','dispatched','partial','received'].includes(o.status))throw Error('This order cannot be checked in.');const good=Number(input.received),bad=Number(input.damaged);if(!Number.isInteger(good)||!Number.isInteger(bad)||good<o.received||bad<0||good+bad>o.quantity)throw Error('Check received and damaged quantities.');o.received=good;o.damaged=bad;o.location=String(input.location||'');o.status=good===o.quantity?'received':'partial';if(good&&!o.receivedAt)o.receivedAt=at;text='Delivery checked: '+good+' good, '+bad+' damaged, '+(o.quantity-good-bad)+' outstanding';break;}
 case 'notify':if(o.status!=='received'||o.kind!=='Customer')throw Error('Receive the full customer order first.');o.status='notified';text='Sample '+o.channel+' notification recorded — no message sent';break;
@@ -55,7 +57,7 @@ default:throw Error('Unknown action.');
 }
 o.version++;o.history.push({at,text,by:o.owner});result=o;
 }
-localStorage.setItem(key,JSON.stringify(records));return new Response(JSON.stringify(result),{status:url==='/api/orders'?201:200});
+const next=CustomOrders.syncTask(JSON.parse(localStorage.getItem(teamKey)),result,at);localStorage.setItem(teamKey,JSON.stringify(next));localStorage.setItem(key,JSON.stringify(records));return new Response(JSON.stringify(result),{status:url==='/api/orders'?201:200});
 }catch(e){return new Response(JSON.stringify({error:e.message}),{status:400});}
 };
 window.downloadTrialExport=()=>{const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),orders:JSON.parse(localStorage.getItem(key)),invoices:JSON.parse(localStorage.getItem(invoiceKey)),invoiceAllocations:JSON.parse(localStorage.getItem(allocationKey))},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tiferes-trial-orders.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
@@ -66,13 +68,15 @@ const teamModel=readFileSync(path.join(root,'team-model.js'),'utf8');
 const authUI=readFileSync(path.join(root,'auth-ui.js'),'utf8');
 const teamUI=readFileSync(path.join(root,'team-ui.js'),'utf8');
 const model=readFileSync(path.join(root,'delivery-model.js'),'utf8');
+const custom=readFileSync(path.join(root,'custom-orders.js'),'utf8')+'\n'+readFileSync(path.join(root,'supplier-excel.js'),'utf8')+'\n'+readFileSync(path.join(root,'custom-ui.js'),'utf8');
 const css=readFileSync(path.join(root,'styles.css'),'utf8');
 let app=readFileSync(path.join(root,'app.js'),'utf8');
 app=app.replaceAll("location.assign('/api/export')","downloadTrialExport()").replaceAll('Saved to this workspace','Saved in this browser only');
 html=html.replace('<link rel="stylesheet" href="/styles.css">','<style>'+css+'</style>').replace('<script defer src="/app.js"></script>','').replace('<script defer src="/delivery-model.js"></script>','').replace('<script defer src="/team-model.js"></script>','').replace('<script defer src="/team-ui.js"></script>','').replace('<script defer src="/auth-ui.js"></script>','');
 html=html.replace('Local workspace saved','Saved in this browser').replace('First version · sample workspace','Standalone trial · sample data').replace('Saved to this workspace','Saved in this browser only').replace('Try the full order journey with sample records. Gmail, Erply and message sending are not connected.','Standalone trial: sample orders save in this browser only, not across devices. No accounts are connected and no messages are sent.').replace('This version saves orders in a local shared database. Live service connections are the next implementation step.','This downloaded trial saves orders only in this browser on this computer. It does not connect to the shared database, Erply, Gmail or messaging accounts. Use sample data only. Clearing browser storage removes trial changes.');
 html=html.replace('href="/" aria-label="Tiferes home"','href="#" aria-label="Tiferes home"');
-html=html.replace('</body>',()=>'<script>'+model+'\n'+teamModel+'\n'+offline+'\n'+authUI+'\n'+teamUI+'\n'+app.replaceAll('</script','<\\/script')+'</script></body>');
+for(const name of ['custom-orders','supplier-excel','custom-ui'])html=html.replace('<script defer src="/'+name+'.js"></script>','');
+html=html.replace('</body>',()=>'<script>'+model+'\n'+teamModel+'\n'+custom+'\n'+offline+'\n'+authUI+'\n'+teamUI+'\n'+app.replaceAll('</script','<\\/script')+'</script></body>');
 writeFileSync(path.join(out,'Tiferes-Trial.html'),html);
 writeFileSync(path.join(out,'START-HERE.txt'),'TIFERES BOOKSHOP — INTERACTIVE TRIAL\n\nDouble-click Tiferes-Trial.html and open it in Chrome or Edge. No installation, account or internet connection is needed.\n\nTry: New order -> Create order -> Place order -> Record dispatch -> Check in delivery -> Try notification.\n\nThis is a standalone trial, not the live shop system. Use fictional details only. Records save in this browser on this computer, not across devices. Do not use private/incognito mode. Clearing browser storage removes trial changes. Export saves a JSON copy; importing it is not implemented. Notifications are simulations: no messages are sent. Your original website and Firebase data are untouched.\n');
 console.log('Created interactive trial in '+out);
