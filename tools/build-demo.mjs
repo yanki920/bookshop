@@ -13,7 +13,7 @@ let records;
 try{const stored=localStorage.getItem(key);records=stored?JSON.parse(stored):seed();if(!Array.isArray(records))throw Error('Invalid trial records.');localStorage.setItem(key,JSON.stringify(records));}
 catch(e){document.body.innerHTML='<main><h1>Browser storage is unavailable</h1><p>Open this downloaded HTML file in a regular Chrome or Edge window with local storage enabled. The trial cannot safely save orders in this window.</p></main>';throw e;}
 const legacyBag=records.find(o=>o.id==='sample-5'&&!o.productType&&o.version===1&&o.book==='Personalised tefillin bag');if(legacyBag){Object.assign(legacyBag,{productType:'bag',custom:{bagType:'BMX',styleCode:'DEMO-01',inscription:legacyBag.customer,fontNumber:'1'},phone:'+32 000 000000',neededBy:ago(-7).slice(0,10)});localStorage.setItem(key,JSON.stringify(records));}
-const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location','productType','custom','neededBy'];
+const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location','productType','custom','neededBy','depositAmount'];
 const check=o=>{for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim())throw Error('Please enter '+k+'.');if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Check the quantity.');};
 const invoiceKey='tiferes-invoice-trial-v1';
 if(!localStorage.getItem(invoiceKey))localStorage.setItem(invoiceKey,JSON.stringify(DeliveryModel.samples()));
@@ -42,11 +42,11 @@ records=JSON.parse(localStorage.getItem(key));
 if(!options.method||options.method==='GET')return new Response(JSON.stringify(url==='/api/export'?{exportedAt:new Date().toISOString(),orders:records,invoices:JSON.parse(localStorage.getItem(invoiceKey)),invoiceAllocations:JSON.parse(localStorage.getItem(allocationKey))}:records),{status:200});
 const input=JSON.parse(options.body),at=new Date().toISOString();let result;
 if(url==='/api/orders'){
-const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOrders.normalize(o));check(o);Object.assign(o,{id:crypto.randomUUID?crypto.randomUUID():'trial-'+Date.now()+'-'+Math.random().toString(16).slice(2),reference:'TF-'+(Math.max(1040,...records.map(x=>Number(x.reference.slice(3))))+1),status:'new',createdAt:at,orderedAt:null,dispatchedAt:null,receivedAt:null,received:0,damaged:0,version:1,history:[{at,text:'Order created in standalone trial',by:o.owner}]});records.unshift(o);result=o;
+const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));check(o);Object.assign(o,{id:crypto.randomUUID?crypto.randomUUID():'trial-'+Date.now()+'-'+Math.random().toString(16).slice(2),reference:'TF-'+(Math.max(1040,...records.map(x=>Number(x.reference.slice(3))))+1),status:'new',createdAt:at,orderedAt:null,dispatchedAt:null,receivedAt:null,received:0,damaged:0,version:1,history:[{at,text:'Order created in standalone trial',by:o.owner}]});records.unshift(o);result=o;
 }else{
 const id=String(url).split('/').at(-1),o=records.find(r=>r.id===id);if(!o)throw Error('Order not found.');if(input.version!==o.version)return new Response(JSON.stringify({error:'Another tab updated this order. Reload and try again.'}),{status:409});let text='';
 switch(input.action){
-case 'edit':for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o));check(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods checked in.');text='Order details updated';break;
+case 'edit':for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));check(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods checked in.');text='Order details updated';break;
 case 'order':if(o.status!=='new'||!input.supplier)throw Error('Choose a supplier for this new order.');o.supplier=input.supplier;o.status='ordered';o.orderedAt=at;text='Order placement recorded with '+o.supplier+' (no email sent)';break;
 case 'supplier-confirmed':case 'supplier-ready':text=CustomOrders.progress(o,input.action,at);break;
 case 'dispatch':if(o.status!=='ordered')throw Error('Place the order first.');o.status='dispatched';o.dispatchedAt=at;text=o.supplier==='Friedman'?'Invoice recorded manually · dispatched':'Dispatch recorded manually';break;
@@ -70,14 +70,16 @@ const authUI=readFileSync(path.join(root,'auth-ui.js'),'utf8');
 const teamUI=readFileSync(path.join(root,'team-ui.js'),'utf8');
 const model=readFileSync(path.join(root,'delivery-model.js'),'utf8');
 const custom=readFileSync(path.join(root,'custom-orders.js'),'utf8')+'\n'+readFileSync(path.join(root,'supplier-excel.js'),'utf8')+'\n'+readFileSync(path.join(root,'custom-ui.js'),'utf8');
+const invoiceAssets='const InvoicePdfAssets='+JSON.stringify({moduleSource:readFileSync(path.join(root,'vendor/pdf.min.mjs'),'utf8'),workerSource:readFileSync(path.join(root,'vendor/pdf.worker.min.mjs'),'utf8')}).replaceAll('<','\\u003c')+';';
+const invoiceReader=readFileSync(path.join(root,'invoice-import.js'),'utf8')+'\n'+readFileSync(path.join(root,'invoice-upload.js'),'utf8');
 const css=readFileSync(path.join(root,'styles.css'),'utf8');
 let app=readFileSync(path.join(root,'app.js'),'utf8');
 app=app.replaceAll("location.assign('/api/export')","downloadTrialExport()").replaceAll('Saved to this workspace','Saved in this browser only');
 html=html.replace('<link rel="stylesheet" href="/styles.css">','<style>'+css+'</style>').replace('<script defer src="/app.js"></script>','').replace('<script defer src="/delivery-model.js"></script>','').replace('<script defer src="/team-model.js"></script>','').replace('<script defer src="/team-ui.js"></script>','').replace('<script defer src="/auth-ui.js"></script>','');
 html=html.replace('Local workspace saved','Saved in this browser').replace('First version · sample workspace','Standalone trial · sample data').replace('Saved to this workspace','Saved in this browser only').replace('Try the full order journey with sample records. Gmail, Erply and message sending are not connected.','Standalone trial: sample orders save in this browser only, not across devices. No accounts are connected and no messages are sent.').replace('This version saves orders in a local shared database. Live service connections are the next implementation step.','This downloaded trial saves orders only in this browser on this computer. It does not connect to the shared database, Erply, Gmail or messaging accounts. Use sample data only. Clearing browser storage removes trial changes.');
 html=html.replace('href="/" aria-label="Tiferes home"','href="#" aria-label="Tiferes home"');
-for(const name of ['custom-orders','supplier-excel','custom-ui'])html=html.replace('<script defer src="/'+name+'.js"></script>','');
-html=html.replace('</body>',()=>'<script>'+model+'\n'+teamModel+'\n'+custom+'\n'+offline+'\n'+authUI+'\n'+teamUI+'\n'+app.replaceAll('</script','<\\/script')+'</script></body>');
+for(const name of ['custom-orders','supplier-excel','custom-ui','invoice-import','invoice-upload'])html=html.replace('<script defer src="/'+name+'.js"></script>','');
+html=html.replace('</body>',()=>'<script>'+model+'\n'+teamModel+'\n'+invoiceAssets+'\n'+invoiceReader+'\n'+custom+'\n'+offline+'\n'+authUI+'\n'+teamUI+'\n'+app.replaceAll('</script','<\\/script')+'</script></body>');
 writeFileSync(path.join(out,'Tiferes-Trial.html'),html);
 writeFileSync(path.join(out,'START-HERE.txt'),'TIFERES BOOKSHOP — INTERACTIVE TRIAL\n\nDouble-click Tiferes-Trial.html and open it in Chrome or Edge. No installation, account or internet connection is needed.\n\nTry: New order -> Create order -> Place order -> Record dispatch -> Check in delivery -> Try notification.\n\nThis is a standalone trial, not the live shop system. Use fictional details only. Records save in this browser on this computer, not across devices. Do not use private/incognito mode. Clearing browser storage removes trial changes. Export saves a JSON copy; importing it is not implemented. Notifications are simulations: no messages are sent. Your original website and Firebase data are untouched.\n');
 console.log('Created interactive trial in '+out);

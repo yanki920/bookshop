@@ -17,6 +17,7 @@ test('persisted order journey, partial delivery, concurrency and payment guards'
 await start();let r=await request('/api/orders',input);assert.equal(r.status,201);let o=r.data;const id=o.id;
 const update=async(action,extra={})=>request('/api/orders/'+id,{version:o.version,action,...extra});
 r=await update('notify');assert.equal(r.status,400);
+r=await update('edit',{payment:'Deposit',depositAmount:0});assert.equal(r.status,400);r=await update('edit',{payment:'Deposit',depositAmount:25.555});assert.equal(r.status,400);r=await update('edit',{payment:'Deposit',depositAmount:25.50});assert.equal(r.status,200);o=r.data;assert.equal(o.depositAmount,25.50);
 r=await update('order',{supplier:'Lehmanns'});assert.equal(r.status,200);o=r.data;assert.equal(o.status,'ordered');assert.ok(o.orderedAt);
 r=await update('dispatch');o=r.data;assert.equal(o.status,'dispatched');
 r=await update('receive',{received:1,damaged:0,location:'B2'});o=r.data;assert.equal(o.status,'partial');
@@ -28,7 +29,7 @@ r=await update('notify');o=r.data;assert.equal(o.status,'notified');assert.match
 r=await update('collect');assert.equal(r.status,400);
 r=await update('edit',{payment:'Paid'});o=r.data;
 r=await update('collect');o=r.data;assert.equal(o.status,'collected');
-await stop();await start();r=await request('/api/orders');const restored=r.data.find(x=>x.id===id);assert.equal(restored.status,'collected');assert.equal(restored.location,'B2');assert.equal(restored.payment,'Paid');
+await stop();await start();r=await request('/api/orders');const restored=r.data.find(x=>x.id===id);assert.equal(restored.status,'collected');assert.equal(restored.location,'B2');assert.equal(restored.payment,'Paid');assert.equal(restored.depositAmount,25.50);
 r=await request('/api/orders',{...input,quantity:-1});assert.equal(r.status,400);
 const hidden=await fetch(base+'/.data/orders.sqlite');assert.equal(hidden.status,404);
 const cross=await fetch(base+'/api/orders',{method:'POST',headers:{Origin:'https://other.example','Content-Type':'application/json'},body:JSON.stringify(input)});assert.equal(cross.status,403);

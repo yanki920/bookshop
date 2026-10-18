@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {extractInvoice} from './invoice-extract.mjs';
 import CustomOrders from './custom-orders.js';
 import DeliveryModel from './delivery-model.js';
 import TeamModel from './team-model.js';
@@ -52,7 +53,7 @@ examples.forEach((a,i)=>{const [customer,book,supplier,status,days,channel,payme
 const createdAt=ago(days+1), orderedAt=status==='new'?null:ago(days);
 save({id:randomUUID(),reference:`TF-${1041+i}`,customer,book,supplier,status,channel,payment,quantity,owner,phone:'',email:'',isbn:'',notes:'Sample order — replace with your own workflow.',kind:customer==='Shop stock'?'Stock':'Customer',received:['received','notified','collected'].includes(status)?quantity:0,damaged:0,location:'',createdAt,orderedAt,dispatchedAt:['dispatched','received','notified','collected'].includes(status)?ago(Math.max(0,days-2)):null,receivedAt:['received','notified','collected'].includes(status)?ago(Math.max(0,days-3)):null,version:1,productType:i===5?'bag':'book',...(i===5?{custom:{bagType:'BMX',styleCode:'DEMO-01',inscription:customer,fontNumber:'1'},phone:'+32 000 000000',neededBy:ago(-7).slice(0,10)}:{}),history:[{at:createdAt,text:'Sample order created',by:owner}]});});
 }
-const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js','/auth-ui.js':'auth-ui.js','/custom-orders.js':'custom-orders.js','/supplier-excel.js':'supplier-excel.js','/custom-ui.js':'custom-ui.js'};
+const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js','/auth-ui.js':'auth-ui.js','/custom-orders.js':'custom-orders.js','/supplier-excel.js':'supplier-excel.js','/custom-ui.js':'custom-ui.js','/invoice-import.js':'invoice-import.js','/invoice-upload.js':'invoice-upload.js'};
 function valid(o){
 for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim()||o[k].length>500)throw Error(`Please enter ${k}.`);
 if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Quantity must be between 1 and 10,000.');
@@ -61,7 +62,7 @@ if(typeof o.supplier!=='string'||o.supplier.length>200||/[\r\n]/.test(o.supplier
 for(const k of ['phone','email','isbn','notes','location'])if(typeof o[k]!=='string'||o[k].length>4000)throw Error('Invalid '+k);
 if(o.kind==='Customer'&&o.channel==='SMS'&&o.phone&&!/^\+?[\d ()-]{6,30}$/.test(o.phone))throw Error('Please check the phone number.');
 }
-const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location','productType','custom','neededBy'];
+const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location','productType','custom','neededBy','depositAmount'];
 const server=http.createServer(async(req,res)=>{
 const send=(code,value)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value));};
 try{
@@ -114,8 +115,9 @@ if(req.method==='GET'&&url.pathname==='/api/invoices')return send(200,invoiceRow
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
 if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all(),invoices:invoiceRows(),invoiceAllocations:allocationRows()});}
 if(req.method!=='POST')return send(405,{error:'Method not allowed.'});
-let body='';for await(const part of req){body+=part;if(body.length>6000000)return send(413,{error:'Request too large.'});}
+let body='';for await(const part of req){body+=part;if(body.length>(url.pathname.startsWith('/api/invoices')?12000000:6000000))return send(413,{error:'Request too large.'});}
 let input;try{input=JSON.parse(body);}catch{return send(400,{error:'Invalid JSON.'});}
+if(url.pathname==='/api/invoice-import')return send(200,await extractInvoice(input.file));
 if(url.pathname==='/api/team'){input.actor=identity.id;const result=TeamModel.apply(teamState(),input,{id:randomUUID(),at:now()});saveTeam(result.state);return send(200,{workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId});}
 const allocationMatch=url.pathname.match(/^\/api\/invoice-allocations\/([\w-]+)$/);
 if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1]);if(!invoice)return send(404,{error:'Invoice not found.'});const existing=allocationRows().find(a=>a.invoiceId===invoice.id)||{invoiceId:invoice.id,version:0,rows:[]};const result=DeliveryModel.saveAllocations(invoice,existing,input);storeAllocations(result);return send(200,result);}
@@ -128,7 +130,7 @@ if(url.pathname==='/api/invoices'){
 const invoiceMatch=url.pathname.match(/^\/api\/invoices\/([\w-]+)$/);
 if(invoiceMatch){const existing=invoiceRows().find(o=>o.id===invoiceMatch[1]);if(!existing)return send(404,{error:'Invoice not found.'});const invoice=DeliveryModel.update(existing,input,now());const assigned=allocationRows().find(a=>a.invoiceId===invoice.id);if(assigned)DeliveryModel.saveAllocations(invoice,assigned,{version:assigned.version,rows:assigned.rows});saveInvoice(invoice);return send(200,invoice);}
 if(url.pathname==='/api/orders'){
-const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOrders.normalize(o));valid(o);
+const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));valid(o);
 const existing=all();o.id=randomUUID();o.reference=`TF-${Math.max(1040,...existing.map(x=>Number(x.reference.slice(3))))+1}`;o.status='new';o.createdAt=now();o.orderedAt=null;o.dispatchedAt=null;o.receivedAt=null;o.received=0;o.damaged=0;o.version=1;o.history=[{at:now(),text:'Order created',by:o.owner}];const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(201,o);
 }
 const match=url.pathname.match(/^\/api\/orders\/([\w-]+)$/);if(!match)return send(404,{error:'Not found.'});
@@ -136,7 +138,7 @@ const row=db.prepare('SELECT document FROM orders WHERE id=?').get(match[1]);if(
 const o=JSON.parse(row.document);
 if(input.version!==o.version)return send(409,{error:'Another employee updated this order. Reload and try again.'});
 let note='';
-if(input.action==='edit'){for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o));valid(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods already checked in.');note='Order details updated';}
+if(input.action==='edit'){for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));valid(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods already checked in.');note='Order details updated';}
 else if(input.action==='order'){if(o.status!=='new')throw Error('This order is already placed.');if(!input.supplier)throw Error('Choose a supplier.');o.supplier=input.supplier;valid(o);o.status='ordered';o.orderedAt=now();note=`Order placed with ${o.supplier}`;}
 else if(['supplier-confirmed','supplier-ready'].includes(input.action)){note=CustomOrders.progress(o,input.action,now());}
 else if(input.action==='dispatch'){if(o.status!=='ordered')throw Error('Only placed orders can be dispatched.');o.status='dispatched';o.dispatchedAt=now();note=o.supplier==='Friedman'?'Invoice recorded manually · dispatched':'Dispatch confirmation recorded manually';}
