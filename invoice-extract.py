@@ -1,4 +1,4 @@
-import sys,os,json,subprocess,tempfile
+import sys,os,json,subprocess,tempfile,csv,io,re
 from pathlib import Path
 path=Path(sys.argv[1]);kind=sys.argv[2]
 MAX_PAGES=5
@@ -8,9 +8,31 @@ def ocr_image(image):
     with Image.open(image) as im:
         if im.width*im.height>25000000:raise ValueError('Use an image smaller than 25 megapixels.')
         im.verify()
-    out=subprocess.run(['tesseract',str(image),'stdout','-l','eng','--psm','6','-c','preserve_interword_spaces=1'],capture_output=True,text=True,timeout=40)
+    out=subprocess.run(['tesseract',str(image),'stdout','--tessdata-dir',str(Path(__file__).parent/'vendor'/'ocr'),'-l','eng+heb','--psm','6','-c','tessedit_create_tsv=1'],capture_output=True,text=True,timeout=40)
     if out.returncode:raise ValueError('The image could not be read. Try a clearer photo.')
-    return out.stdout
+    if not re.search('[\u0590-\u05ff]',out.stdout):
+        english=subprocess.run(['tesseract',str(image),'stdout','--tessdata-dir',str(Path(__file__).parent/'vendor'/'ocr'),'-l','eng','--psm','6','-c','preserve_interword_spaces=1'],capture_output=True,text=True,timeout=40)
+        if english.returncode:raise ValueError('The image could not be read. Try a clearer photo.')
+        return english.stdout
+    rows={}
+    for w in csv.DictReader(io.StringIO(out.stdout),delimiter='\t'):
+        if w.get('level')!='5' or not w.get('text','').strip():continue
+        key=(w['page_num'],w['block_num'],w['par_num'],w['line_num'])
+        rows.setdefault(key,[]).append(w)
+    result=[]
+    for words in rows.values():
+        groups=[]
+        row_height=max(int(w['height']) for w in words)
+        for w in sorted(words,key=lambda w:int(w['left'])):
+            if not groups or int(w['left'])-int(groups[-1][-1]['left'])-int(groups[-1][-1]['width'])>row_height*0.8:groups.append([])
+            groups[-1].append(w)
+        cells=[]
+        for group in groups:
+            text=' '.join(w['text'] for w in group)
+            if len(re.findall('[\u0590-\u05ff]',text))>len(re.findall('[a-zA-Z]',text)):group.reverse()
+            cells.append(' '.join(w['text'].replace('\u200e','').replace('\u200f','') for w in group))
+        result.append('  '.join(cells))
+    return '\n'.join(result)
 
 try:
     pages=[];table_rows=[];method='text';notes=[]
@@ -25,7 +47,7 @@ try:
                     for cells in table:
                         values=[str(c or '').strip() for c in cells]
                         lowered=[v.lower() for v in values]
-                        if any(v in ('qty','quantity','aantal') for v in lowered) and any(v in ('description','title','omschrijving') for v in lowered):
+                        if any(v in ('qty','quantity','aantal','כמות') for v in lowered) and any(v in ('description','title','omschrijving','תיאור','שם הספר','פריט') for v in lowered):
                             active=[j for j,v in enumerate(values) if v]
                             header=active
                             table_rows.append('  '.join(values[j] for j in active))

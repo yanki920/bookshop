@@ -1,4 +1,5 @@
 import http from 'node:http';
+import ShopCatalog from './shop-catalog.js';
 import {extractInvoice} from './invoice-extract.mjs';
 import CustomOrders from './custom-orders.js';
 import DeliveryModel from './delivery-model.js';
@@ -18,6 +19,11 @@ if(!gmailMailboxes.length){try{gmailMailboxes=JSON.parse(readFileSync(path.join(
 const gmail=createGmailService({mailboxes:gmailMailboxes,store:new GmailStore(data)});
 const db=new DatabaseSync(path.join(data,'orders.sqlite'));
 const auth=createAuth(db);
+db.exec('CREATE TABLE IF NOT EXISTS suppliers (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
+const suppliers=()=>db.prepare('SELECT document FROM suppliers').all().map(r=>JSON.parse(r.document));
+const saveSupplier=s=>db.prepare('INSERT OR REPLACE INTO suppliers VALUES (?,?)').run(s.id,JSON.stringify(s));
+if(!suppliers().length)ShopCatalog.supplierSeed().forEach(saveSupplier);
+const rememberSupplier=(name,productType='book')=>{if(!name)return;const result=ShopCatalog.addSupplier(suppliers(),{name,productTypes:[productType]},randomUUID());saveSupplier(result.supplier);};
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 db.exec('CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 db.exec('CREATE TABLE IF NOT EXISTS invoice_allocations (invoice_id TEXT PRIMARY KEY, document TEXT NOT NULL)');
@@ -53,7 +59,7 @@ examples.forEach((a,i)=>{const [customer,book,supplier,status,days,channel,payme
 const createdAt=ago(days+1), orderedAt=status==='new'?null:ago(days);
 save({id:randomUUID(),reference:`TF-${1041+i}`,customer,book,supplier,status,channel,payment,quantity,owner,phone:'',email:'',isbn:'',notes:'Sample order — replace with your own workflow.',kind:customer==='Shop stock'?'Stock':'Customer',received:['received','notified','collected'].includes(status)?quantity:0,damaged:0,location:'',createdAt,orderedAt,dispatchedAt:['dispatched','received','notified','collected'].includes(status)?ago(Math.max(0,days-2)):null,receivedAt:['received','notified','collected'].includes(status)?ago(Math.max(0,days-3)):null,version:1,productType:i===5?'bag':'book',...(i===5?{custom:{bagType:'BMX',styleCode:'DEMO-01',inscription:customer,fontNumber:'1'},phone:'+32 000 000000',neededBy:ago(-7).slice(0,10)}:{}),history:[{at:createdAt,text:'Sample order created',by:owner}]});});
 }
-const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js','/auth-ui.js':'auth-ui.js','/custom-orders.js':'custom-orders.js','/supplier-excel.js':'supplier-excel.js','/custom-ui.js':'custom-ui.js','/invoice-import.js':'invoice-import.js','/invoice-upload.js':'invoice-upload.js'};
+const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js','/auth-ui.js':'auth-ui.js','/custom-orders.js':'custom-orders.js','/supplier-excel.js':'supplier-excel.js','/custom-ui.js':'custom-ui.js','/invoice-import.js':'invoice-import.js','/invoice-upload.js':'invoice-upload.js','/shop-catalog.js':'shop-catalog.js','/catalog-ui.js':'catalog-ui.js'};
 function valid(o){
 for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim()||o[k].length>500)throw Error(`Please enter ${k}.`);
 if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Quantity must be between 1 and 10,000.');
@@ -108,15 +114,17 @@ if(url.pathname.startsWith('/api/gmail/')||url.pathname==='/oauth/gmail/callback
 }
 if(url.pathname.startsWith('/api/')){
 if(req.method!=='GET'&&req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(403,{error:'Request origin not allowed.'});
+if(req.method==='GET'&&url.pathname==='/api/suppliers')return send(200,suppliers());
 if(req.method==='GET'&&url.pathname==='/api/order-workers')return send(200,teamState().workers.map(w=>({id:w.id,name:w.name})));
 if(req.method==='GET'&&url.pathname==='/api/team')return send(200,TeamModel.forActor(teamState(),identity.id));
 if(req.method==='GET'&&url.pathname.startsWith('/api/invoice-allocations/')){const id=url.pathname.split('/').at(-1);return send(200,allocationRows().find(a=>a.invoiceId===id)||{invoiceId:id,version:0,rows:[]});}
 if(req.method==='GET'&&url.pathname==='/api/invoices')return send(200,invoiceRows());
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
-if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all(),invoices:invoiceRows(),invoiceAllocations:allocationRows()});}
+if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all(),invoices:invoiceRows(),invoiceAllocations:allocationRows(),suppliers:suppliers()});}
 if(req.method!=='POST')return send(405,{error:'Method not allowed.'});
 let body='';for await(const part of req){body+=part;if(body.length>(url.pathname.startsWith('/api/invoices')?12000000:6000000))return send(413,{error:'Request too large.'});}
 let input;try{input=JSON.parse(body);}catch{return send(400,{error:'Invalid JSON.'});}
+if(url.pathname==='/api/suppliers'){const result=ShopCatalog.addSupplier(suppliers(),input,randomUUID());saveSupplier(result.supplier);return send(result.created?201:200,{supplier:result.supplier,created:result.created});}
 if(url.pathname==='/api/invoice-import')return send(200,await extractInvoice(input.file));
 if(url.pathname==='/api/team'){input.actor=identity.id;const result=TeamModel.apply(teamState(),input,{id:randomUUID(),at:now()});saveTeam(result.state);return send(200,{workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId});}
 const allocationMatch=url.pathname.match(/^\/api\/invoice-allocations\/([\w-]+)$/);
@@ -125,13 +133,13 @@ if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1
 if(url.pathname==='/api/invoices'){
  const invoice=DeliveryModel.create(input,{id:randomUUID(),at:now()});
  if(invoiceRows().some(x=>x.supplier.toLowerCase()===invoice.supplier.toLowerCase()&&x.number.toLowerCase()===invoice.number.toLowerCase()))return send(409,{error:'This supplier invoice is already registered.'});
- saveInvoice(invoice);return send(201,invoice);
+ db.exec('BEGIN');try{rememberSupplier(invoice.supplier);saveInvoice(invoice);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(201,invoice);
 }
 const invoiceMatch=url.pathname.match(/^\/api\/invoices\/([\w-]+)$/);
 if(invoiceMatch){const existing=invoiceRows().find(o=>o.id===invoiceMatch[1]);if(!existing)return send(404,{error:'Invoice not found.'});const invoice=DeliveryModel.update(existing,input,now());const assigned=allocationRows().find(a=>a.invoiceId===invoice.id);if(assigned)DeliveryModel.saveAllocations(invoice,assigned,{version:assigned.version,rows:assigned.rows});saveInvoice(invoice);return send(200,invoice);}
 if(url.pathname==='/api/orders'){
 const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));valid(o);
-const existing=all();o.id=randomUUID();o.reference=`TF-${Math.max(1040,...existing.map(x=>Number(x.reference.slice(3))))+1}`;o.status='new';o.createdAt=now();o.orderedAt=null;o.dispatchedAt=null;o.receivedAt=null;o.received=0;o.damaged=0;o.version=1;o.history=[{at:now(),text:'Order created',by:o.owner}];const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(201,o);
+const existing=all();o.id=randomUUID();o.reference=`TF-${Math.max(1040,...existing.map(x=>Number(x.reference.slice(3))))+1}`;o.status='new';o.createdAt=now();o.orderedAt=null;o.dispatchedAt=null;o.receivedAt=null;o.received=0;o.damaged=0;o.version=1;o.history=[{at:now(),text:'Order created',by:o.owner}];const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);rememberSupplier(o.supplier,o.productType||'book');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(201,o);
 }
 const match=url.pathname.match(/^\/api\/orders\/([\w-]+)$/);if(!match)return send(404,{error:'Not found.'});
 const row=db.prepare('SELECT document FROM orders WHERE id=?').get(match[1]);if(!row)return send(404,{error:'Order not found.'});
@@ -149,10 +157,10 @@ if(!Number.isInteger(received)||!Number.isInteger(damaged)||received<o.received|
 o.received=received;o.damaged=damaged;o.location=String(input.location||'').slice(0,500);o.status=received===o.quantity?'received':'partial';if(received&&!o.receivedAt)o.receivedAt=now();note=`Delivery checked: ${received} good, ${damaged} damaged, ${o.quantity-received-damaged} outstanding`;
 }
 else if(input.action==='notify'){if(o.status!=='received'||o.kind==='Stock')throw Error('Only complete customer orders can be notified.');o.status='notified';note=`Sample ${o.channel} notification recorded — no message sent`;}
-else if(input.action==='collect'){if(!['received','notified'].includes(o.status))throw Error('Receive the full order before collection.');if(o.kind==='Customer'&&o.payment!=='Paid')throw Error('Mark the order paid before collection.');o.status='collected';note=o.kind==='Stock'?'Stock shelved':'Customer collected order';}
+else if(input.action==='collect'){if(!['received','notified'].includes(o.status))throw Error('Receive the full order before collection.');if(o.kind==='Customer'&&o.productType!=='plate'&&o.payment!=='Paid')throw Error('Mark the order paid before collection.');o.status='collected';note=o.kind==='Stock'?'Stock shelved':'Customer collected order';}
 else if(input.action==='note'){if(!String(input.note||'').trim())throw Error('Enter a note.');note=String(input.note).slice(0,4000);}
 else throw Error('Unknown action.');
-o.version++;o.history.push({at:now(),text:note,by:o.owner});const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(200,o);
+o.version++;o.history.push({at:now(),text:note,by:o.owner});const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);rememberSupplier(o.supplier,o.productType||'book');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(200,o);
 }
 if(req.method!=='GET'||!files[url.pathname]){res.writeHead(404);return res.end('Not found');}
 const name=files[url.pathname];res.writeHead(200,{'Content-Type':name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});res.end(readFileSync(path.join(root,name)));
