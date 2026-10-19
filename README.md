@@ -150,7 +150,7 @@ The new order form is for customers only; its former Customer/Stock selector is 
 
 ## Right-to-left book sheets
 
-The Books workspace mirrors the sidebar, page, status controls and table for right-to-left reading. New book forms and book details/editing also use RTL, including when a linked record is opened from a task. Hebrew customer/book names and notes use automatic text direction; phones, email addresses, ISBNs, dates, quantities and amounts use LTR fields. Sticker names/titles detect Hebrew direction while keeping their fixed dimensions. Other product lists and Delivery Desk keep their existing layout. Field labels remain in their current language; no automatic translation is applied.
+All workspaces mirror the sidebar, page, status controls and tables for right-to-left reading. New book forms and book details/editing also use RTL, including when a linked record is opened from a task. Hebrew customer/book names and notes use automatic text direction; phones, email addresses, ISBNs, dates, quantities and amounts use LTR fields. Sticker names/titles detect Hebrew direction while keeping their fixed dimensions. Bags, stamps, door plates, Deliveries, Tasks, Chat, sign-in and all dialogs also use RTL. Technical values such as phone numbers, email addresses and prices retain readable LTR character order inside right-aligned fields. Field labels remain in their current language; no automatic translation is applied.
 
 ## Saved suppliers and three-letter suggestions
 
@@ -173,3 +173,5 @@ The delivery chain uses `delivery-chain.js` in the server and standalone trial. 
 Every customer order has a visible **Change status** action. Staff may manually select Ordered, On the way or Here in the shop, in either direction, and enter their name. The shared `status` action records the previous/new status, worker and time without altering invoice counts or receipts. Manual status is marked in the progress line and persists through reprocessing unchanged invoice facts. A changed completed delivery receipt resumes automatic progress. No message is sent by changing status.
 
 Customer order details show explicit SMS, WhatsApp and Email buttons under “Notify customer”. Each opens an editable message draft and recipient field; email also has a subject. An arrived order offers collection wording, including one marked arrived manually without an invoice. Copying a draft leaves the status unchanged. Actual channel sending remains disabled until integrations are configured.
+
+Customer messaging initially selects the saved SMS/WhatsApp/Email preference from the order and highlights it. Choosing another channel applies only to the current draft; reopening the order restores the saved preference. Orders without a saved supported preference ask staff to choose a channel. This does not enable sending.
