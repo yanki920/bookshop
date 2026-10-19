@@ -3,6 +3,7 @@ import ShopCatalog from './shop-catalog.js';
 import {extractInvoice} from './invoice-extract.mjs';
 import CustomOrders from './custom-orders.js';
 import DeliveryModel from './delivery-model.js';
+import DeliveryChain from './delivery-chain.js';
 import TeamModel from './team-model.js';
 import {createAuth} from './auth.mjs';
 import { DatabaseSync } from 'node:sqlite';
@@ -40,6 +41,7 @@ if(!db.prepare('SELECT count(*) AS n FROM invoices').get().n)DeliveryModel.sampl
 if(!invoiceRows().some(o=>o.id==='invoice-label-demo')){saveInvoice(DeliveryModel.samples().find(o=>o.id==='invoice-label-demo'));storeAllocations(DeliveryModel.allocationSamples().find(a=>a.invoiceId==='invoice-label-demo'));}
 const all=()=>db.prepare('SELECT document FROM orders ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
 const save=o=>db.prepare('INSERT OR REPLACE INTO orders VALUES (?,?)').run(o.id,JSON.stringify(o));
+function applyInvoiceChain(invoice,allocation,at,worker){const outcome=DeliveryChain.reconcile(invoice,allocation,all(),at,worker);let team=teamState();for(const order of outcome.orders.filter(o=>outcome.changed.includes(o.id))){save(order);team=CustomOrders.syncTask(team,order,at);}saveTeam(team);storeAllocations(outcome.allocation);invoice.linkedOrdersUpdated=outcome.changed.length;invoice.linkedOrderCount=new Set(outcome.allocation.rows.filter(r=>r.orderId).map(r=>r.orderId)).size;saveInvoice(invoice);return outcome.allocation;}
 const now=()=>new Date().toISOString();
 const ago=d=>new Date(Date.now()-d*86400000).toISOString();
 if(!db.prepare('SELECT count(*) AS n FROM orders').get().n){
@@ -59,7 +61,7 @@ examples.forEach((a,i)=>{const [customer,book,supplier,status,days,channel,payme
 const createdAt=ago(days+1), orderedAt=status==='new'?null:ago(days);
 save({id:randomUUID(),reference:`TF-${1041+i}`,customer,book,supplier,status,channel,payment,quantity,owner,phone:'',email:'',isbn:'',notes:'Sample order — replace with your own workflow.',kind:customer==='Shop stock'?'Stock':'Customer',received:['received','notified','collected'].includes(status)?quantity:0,damaged:0,location:'',createdAt,orderedAt,dispatchedAt:['dispatched','received','notified','collected'].includes(status)?ago(Math.max(0,days-2)):null,receivedAt:['received','notified','collected'].includes(status)?ago(Math.max(0,days-3)):null,version:1,productType:i===5?'bag':'book',...(i===5?{custom:{bagType:'BMX',styleCode:'DEMO-01',inscription:customer,fontNumber:'1'},phone:'+32 000 000000',neededBy:ago(-7).slice(0,10)}:{}),history:[{at:createdAt,text:'Sample order created',by:owner}]});});
 }
-const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js','/auth-ui.js':'auth-ui.js','/custom-orders.js':'custom-orders.js','/supplier-excel.js':'supplier-excel.js','/custom-ui.js':'custom-ui.js','/invoice-import.js':'invoice-import.js','/invoice-upload.js':'invoice-upload.js','/shop-catalog.js':'shop-catalog.js','/catalog-ui.js':'catalog-ui.js'};
+const files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/delivery-model.js':'delivery-model.js','/delivery-chain.js':'delivery-chain.js','/team-model.js':'team-model.js','/team-ui.js':'team-ui.js','/auth-ui.js':'auth-ui.js','/custom-orders.js':'custom-orders.js','/supplier-excel.js':'supplier-excel.js','/custom-ui.js':'custom-ui.js','/invoice-import.js':'invoice-import.js','/invoice-upload.js':'invoice-upload.js','/shop-catalog.js':'shop-catalog.js','/catalog-ui.js':'catalog-ui.js'};
 function valid(o){
 for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim()||o[k].length>500)throw Error(`Please enter ${k}.`);
 if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw Error('Quantity must be between 1 and 10,000.');
@@ -117,7 +119,7 @@ if(req.method!=='GET'&&req.headers.origin&&req.headers.origin!==`http://${req.he
 if(req.method==='GET'&&url.pathname==='/api/suppliers')return send(200,suppliers());
 if(req.method==='GET'&&url.pathname==='/api/order-workers')return send(200,teamState().workers.map(w=>({id:w.id,name:w.name})));
 if(req.method==='GET'&&url.pathname==='/api/team')return send(200,TeamModel.forActor(teamState(),identity.id));
-if(req.method==='GET'&&url.pathname.startsWith('/api/invoice-allocations/')){const id=url.pathname.split('/').at(-1);return send(200,allocationRows().find(a=>a.invoiceId===id)||{invoiceId:id,version:0,rows:[]});}
+if(req.method==='GET'&&url.pathname.startsWith('/api/invoice-allocations/')){const id=url.pathname.split('/').at(-1),invoice=invoiceRows().find(o=>o.id===id);if(!invoice)return send(404,{error:'Invoice not found.'});return send(200,DeliveryChain.plan(invoice,allocationRows().find(a=>a.invoiceId===id),all(),allocationRows()));}
 if(req.method==='GET'&&url.pathname==='/api/invoices')return send(200,invoiceRows());
 if(req.method==='GET'&&url.pathname==='/api/orders')return send(200,all());
 if(req.method==='GET'&&url.pathname==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="bookshop-orders.json"');return send(200,{exportedAt:now(),orders:all(),invoices:invoiceRows(),invoiceAllocations:allocationRows(),suppliers:suppliers()});}
@@ -128,15 +130,15 @@ if(url.pathname==='/api/suppliers'){const result=ShopCatalog.addSupplier(supplie
 if(url.pathname==='/api/invoice-import')return send(200,await extractInvoice(input.file));
 if(url.pathname==='/api/team'){input.actor=identity.id;const result=TeamModel.apply(teamState(),input,{id:randomUUID(),at:now()});saveTeam(result.state);return send(200,{workspace:TeamModel.forActor(result.state,input.actor),createdId:result.createdId});}
 const allocationMatch=url.pathname.match(/^\/api\/invoice-allocations\/([\w-]+)$/);
-if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1]);if(!invoice)return send(404,{error:'Invoice not found.'});const existing=allocationRows().find(a=>a.invoiceId===invoice.id)||{invoiceId:invoice.id,version:0,rows:[]};const result=DeliveryModel.saveAllocations(invoice,existing,input);storeAllocations(result);return send(200,result);}
+if(allocationMatch){const invoice=invoiceRows().find(o=>o.id===allocationMatch[1]);if(!invoice)return send(404,{error:'Invoice not found.'});const existing=allocationRows().find(a=>a.invoiceId===invoice.id)||{invoiceId:invoice.id,version:0,rows:[]};let result=DeliveryModel.saveAllocations(invoice,existing,input);result=DeliveryChain.plan(invoice,result,all(),allocationRows());db.exec('BEGIN');try{result=applyInvoiceChain(invoice,result,now(),input.worker||'Delivery desk');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(200,result);}
 // Invoice checkers enter their name in the shared delivery area.
 if(url.pathname==='/api/invoices'){
  const invoice=DeliveryModel.create(input,{id:randomUUID(),at:now()});
  if(invoiceRows().some(x=>x.supplier.toLowerCase()===invoice.supplier.toLowerCase()&&x.number.toLowerCase()===invoice.number.toLowerCase()))return send(409,{error:'This supplier invoice is already registered.'});
- db.exec('BEGIN');try{rememberSupplier(invoice.supplier);saveInvoice(invoice);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(201,invoice);
+ db.exec('BEGIN');try{rememberSupplier(invoice.supplier);saveInvoice(invoice);storeAllocations(DeliveryChain.plan(invoice,null,all(),allocationRows()));db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(201,invoice);
 }
 const invoiceMatch=url.pathname.match(/^\/api\/invoices\/([\w-]+)$/);
-if(invoiceMatch){const existing=invoiceRows().find(o=>o.id===invoiceMatch[1]);if(!existing)return send(404,{error:'Invoice not found.'});const invoice=DeliveryModel.update(existing,input,now());const assigned=allocationRows().find(a=>a.invoiceId===invoice.id);if(assigned)DeliveryModel.saveAllocations(invoice,assigned,{version:assigned.version,rows:assigned.rows});saveInvoice(invoice);return send(200,invoice);}
+if(invoiceMatch){const existing=invoiceRows().find(o=>o.id===invoiceMatch[1]);if(!existing)return send(404,{error:'Invoice not found.'});const invoice=DeliveryModel.update(existing,input,now());const assigned=DeliveryChain.plan(existing,allocationRows().find(a=>a.invoiceId===invoice.id),all(),allocationRows());db.exec('BEGIN');try{applyInvoiceChain(invoice,assigned,now(),input.worker);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(200,invoice);}
 if(url.pathname==='/api/orders'){
 const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));valid(o);
 const existing=all();o.id=randomUUID();o.reference=`TF-${Math.max(1040,...existing.map(x=>Number(x.reference.slice(3))))+1}`;o.status='new';o.createdAt=now();o.orderedAt=null;o.dispatchedAt=null;o.receivedAt=null;o.received=0;o.damaged=0;o.version=1;o.history=[{at:now(),text:'Order created',by:o.owner}];const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);rememberSupplier(o.supplier,o.productType||'book');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(201,o);
