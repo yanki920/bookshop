@@ -1,0 +1,9 @@
+.git
+.netlify
+.data
+.demo
+node_modules
+public-trial
+*.log
+.env
+.env.*

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: tiferes-shop
+    runtime: docker
+    branch: codex/trial-preview
+    region: frankfurt
+    plan: starter
+    numInstances: 1
+    healthCheckPath: /healthz
+    autoDeployTrigger: "off"
+    disk:
+      name: tiferes-shop-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: BOOKSHOP_ACCESS_PASSWORD
+        sync: false
+      - key: BOOKSHOP_OWNER_PASSWORD
+        sync: false
+      - key: BOOKSHOP_OWNER_NAME
+        value: Shop owner

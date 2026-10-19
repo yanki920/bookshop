@@ -1,4 +1,6 @@
 import http from 'node:http';
+import {createShopGate} from './deployment/access.mjs';
+import {startBackups} from './deployment/backups.mjs';
 import ShopCatalog from './shop-catalog.js';
 import {extractInvoice} from './invoice-extract.mjs';
 import CustomOrders from './custom-orders.js';
@@ -12,6 +14,12 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {GmailStore,createGmailService} from './integrations/gmail.mjs';
+const production=process.env.NODE_ENV==='production';
+if(production&&!process.env.BOOKSHOP_ACCESS_PASSWORD)throw Error('Set BOOKSHOP_ACCESS_PASSWORD before starting the private shop website.');
+const shopGate=createShopGate(process.env.BOOKSHOP_ACCESS_PASSWORD);
+const configuredOrigin=process.env.BOOKSHOP_PUBLIC_ORIGIN||process.env.RENDER_EXTERNAL_URL;
+if(production&&(!configuredOrigin||!configuredOrigin.startsWith('https://')))throw Error('Configure the public HTTPS website address.');
+const seedSamples=process.env.BOOKSHOP_SEED_SAMPLES===undefined?!production:process.env.BOOKSHOP_SEED_SAMPLES!=='0';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=process.env.BOOKSHOP_DATA_DIR||path.join(root,'.data');
 mkdirSync(data,{recursive:true});
@@ -20,6 +28,8 @@ if(!gmailMailboxes.length){try{gmailMailboxes=JSON.parse(readFileSync(path.join(
 const gmail=createGmailService({mailboxes:gmailMailboxes,store:new GmailStore(data)});
 const db=new DatabaseSync(path.join(data,'orders.sqlite'));
 const auth=createAuth(db);
+if(!auth.hasUsers()&&process.env.BOOKSHOP_OWNER_PASSWORD){if(process.env.BOOKSHOP_OWNER_PASSWORD===process.env.BOOKSHOP_ACCESS_PASSWORD)throw Error('Choose a separate owner password and shop access password.');auth.setup({name:process.env.BOOKSHOP_OWNER_NAME||'Shop owner',password:process.env.BOOKSHOP_OWNER_PASSWORD});}
+if(production&&!auth.hasUsers())throw Error('Set BOOKSHOP_OWNER_PASSWORD to initialise the owner account.');
 db.exec('CREATE TABLE IF NOT EXISTS suppliers (id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 const suppliers=()=>db.prepare('SELECT document FROM suppliers').all().map(r=>JSON.parse(r.document));
 const saveSupplier=s=>db.prepare('INSERT OR REPLACE INTO suppliers VALUES (?,?)').run(s.id,JSON.stringify(s));
@@ -30,21 +40,21 @@ db.exec('CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, document TEXT
 db.exec('CREATE TABLE IF NOT EXISTS invoice_allocations (invoice_id TEXT PRIMARY KEY, document TEXT NOT NULL)');
 const allocationRows=()=>db.prepare('SELECT document FROM invoice_allocations').all().map(r=>JSON.parse(r.document));
 const storeAllocations=a=>db.prepare('INSERT OR REPLACE INTO invoice_allocations VALUES (?,?)').run(a.invoiceId,JSON.stringify(a));
-if(!db.prepare('SELECT count(*) AS n FROM invoice_allocations').get().n)DeliveryModel.allocationSamples().forEach(storeAllocations);
+if(seedSamples&&!db.prepare('SELECT count(*) AS n FROM invoice_allocations').get().n)DeliveryModel.allocationSamples().forEach(storeAllocations);
 db.exec('CREATE TABLE IF NOT EXISTS team_workspace (id INTEGER PRIMARY KEY CHECK(id=1), document TEXT NOT NULL)');
 const teamState=()=>{const row=db.prepare('SELECT document FROM team_workspace WHERE id=1').get();return row?JSON.parse(row.document):null;};
 const saveTeam=state=>db.prepare('INSERT OR REPLACE INTO team_workspace VALUES (1,?)').run(JSON.stringify(state));
-if(!teamState())saveTeam(TeamModel.samples());
+if(!teamState()){const state=TeamModel.samples();if(!seedSamples){state.workers=auth.listUsers().map(({id,name,role})=>({id,name,role}));state.tasks=[];state.messages=[];state.seen={};state.activity=[];}saveTeam(state);}
 const invoiceRows=()=>db.prepare('SELECT document FROM invoices ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
 const saveInvoice=o=>db.prepare('INSERT OR REPLACE INTO invoices VALUES (?,?)').run(o.id,JSON.stringify(o));
-if(!db.prepare('SELECT count(*) AS n FROM invoices').get().n)DeliveryModel.samples().forEach(saveInvoice);
-if(!invoiceRows().some(o=>o.id==='invoice-label-demo')){saveInvoice(DeliveryModel.samples().find(o=>o.id==='invoice-label-demo'));storeAllocations(DeliveryModel.allocationSamples().find(a=>a.invoiceId==='invoice-label-demo'));}
+if(seedSamples&&!db.prepare('SELECT count(*) AS n FROM invoices').get().n)DeliveryModel.samples().forEach(saveInvoice);
+if(seedSamples&&!invoiceRows().some(o=>o.id==='invoice-label-demo')){saveInvoice(DeliveryModel.samples().find(o=>o.id==='invoice-label-demo'));storeAllocations(DeliveryModel.allocationSamples().find(a=>a.invoiceId==='invoice-label-demo'));}
 const all=()=>db.prepare('SELECT document FROM orders ORDER BY rowid DESC').all().map(r=>JSON.parse(r.document));
 const save=o=>db.prepare('INSERT OR REPLACE INTO orders VALUES (?,?)').run(o.id,JSON.stringify(o));
 function applyInvoiceChain(invoice,allocation,at,worker){const outcome=DeliveryChain.reconcile(invoice,allocation,all(),at,worker);let team=teamState();for(const order of outcome.orders.filter(o=>outcome.changed.includes(o.id))){save(order);team=CustomOrders.syncTask(team,order,at);}saveTeam(team);storeAllocations(outcome.allocation);invoice.linkedOrdersUpdated=outcome.changed.length;invoice.linkedOrderCount=new Set(outcome.allocation.rows.filter(r=>r.orderId).map(r=>r.orderId)).size;saveInvoice(invoice);return outcome.allocation;}
 const now=()=>new Date().toISOString();
 const ago=d=>new Date(Date.now()-d*86400000).toISOString();
-if(!db.prepare('SELECT count(*) AS n FROM orders').get().n){
+if(seedSamples&&!db.prepare('SELECT count(*) AS n FROM orders').get().n){
 const examples=[
 ['M. Rosenberg','Artscroll Schottenstein Talmud · Berachos','Lehmanns','ordered',7,'SMS','Paid',1,'Sarah'],
 ['D. Cohen','The Illustrated Pirkei Avos','Lehmanns','ordered',4,'WhatsApp','Unpaid',1,'David'],
@@ -75,7 +85,9 @@ const server=http.createServer(async(req,res)=>{
 const send=(code,value)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value));};
 try{
 const url=new URL(req.url,'http://localhost');
-const publicOrigin=process.env.BOOKSHOP_PUBLIC_ORIGIN||`http://${req.headers.host}`;
+if(url.pathname==='/healthz'&&req.method==='GET'){db.prepare('SELECT 1').get();return send(200,{status:'ok'});}
+if(!shopGate(req,res))return;
+const publicOrigin=configuredOrigin||`http://${req.headers.host}`;
 if(!['GET','HEAD'].includes(req.method)&&req.headers.origin&&req.headers.origin!==publicOrigin)return send(403,{error:'Request origin not allowed.'});
 const token=req.headers.cookie?.match(/(?:^|;\s*)bookshop_session=([a-f0-9]{64})(?:;|$)/)?.[1];
 const identity=auth.fromToken(token);
@@ -170,4 +182,5 @@ if(req.method!=='GET'||!files[url.pathname]){res.writeHead(404);return res.end('
 const name=files[url.pathname];res.writeHead(200,{'Content-Type':name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});res.end(readFileSync(path.join(root,name)));
 }catch(e){send(e.status||400,{error:e.message});}
 });
+if(process.env.BOOKSHOP_BACKUP_DIR)startBackups(data,process.env.BOOKSHOP_BACKUP_DIR);
 server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log('Bookshop first version running on port '+(process.env.PORT||3000)));
