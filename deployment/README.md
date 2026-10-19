@@ -1,5 +1,7 @@
 # Private hosted shop
 
+**Render deployment is on hold while the owner considers free hosting.** See [the verified free-hosting review](FREE-HOSTING-REVIEW.md). Do not treat the paid blueprint as the selected deployment route.
+
 This is a deployment package, not an already deployed website. It does not change the old Netlify site. A hosting-account sign-in and approval of the provider's paid service/disk are required. No hosting credential is available in the coding environment.
 
 ## Render deployment

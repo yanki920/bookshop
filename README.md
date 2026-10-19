@@ -1,5 +1,7 @@
 # Tiferes customer orders — first version
 
+The paid Render deployment is currently on hold. The [free-hosting review](deployment/FREE-HOSTING-REVIEW.md) recommends Cloudflare + Supabase after application changes; it is not yet implemented or deployed.
+
 Private shared hosting is prepared in [deployment/README.md](deployment/README.md), with a Docker image and Render blueprint. It is not yet deployed; a hosting-account sign-in and approval of the provider service are still required.
 
 A working development version for the customer-order workflow, with a responsive computer/tablet interface and a shared SQLite database. It is separate from the previous Firebase-backed application: no existing Firebase records are imported, modified or deleted.
