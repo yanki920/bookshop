@@ -7,7 +7,7 @@ import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 const dir=mkdtempSync(path.join(tmpdir(),'bookshop-test-'));
-const port=3300+Math.floor(Math.random()*1000),base=`http://127.0.0.1:${port}`;
+const port=18300+Math.floor(Math.random()*1000),base=`http://127.0.0.1:${port}`;
 let child,cookie;
 async function start(){child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:String(port),BOOKSHOP_DATA_DIR:dir},stdio:['ignore','pipe','pipe']});await Promise.race([once(child.stdout,'data'),once(child,'exit').then(([code])=>{throw Error('Server failed: '+code)})]);cookie=await ownerCookie(base);}
 async function stop(){child.kill();await once(child,'exit');}

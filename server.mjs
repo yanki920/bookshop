@@ -147,6 +147,7 @@ const o=JSON.parse(row.document);
 if(input.version!==o.version)return send(409,{error:'Another employee updated this order. Reload and try again.'});
 let note='';
 if(input.action==='edit'){for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));valid(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods already checked in.');note='Order details updated';}
+else if(input.action==='price'){note=CustomOrders.setPrice(o,input.customerPrice);}
 else if(input.action==='order'){if(o.status!=='new')throw Error('This order is already placed.');if(!input.supplier)throw Error('Choose a supplier.');o.supplier=input.supplier;valid(o);o.status='ordered';o.orderedAt=now();note=`Order placed with ${o.supplier}`;}
 else if(['supplier-confirmed','supplier-ready'].includes(input.action)){note=CustomOrders.progress(o,input.action,now());}
 else if(input.action==='dispatch'){if(o.status!=='ordered')throw Error('Only placed orders can be dispatched.');o.status='dispatched';o.dispatchedAt=now();note=o.supplier==='Friedman'?'Invoice recorded manually · dispatched':'Dispatch confirmation recorded manually';}
