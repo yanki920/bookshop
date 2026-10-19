@@ -49,6 +49,7 @@ const o=Object.fromEntries(fields.map(k=>[k,input[k]]));Object.assign(o,CustomOr
 const id=String(url).split('/').at(-1),o=records.find(r=>r.id===id);if(!o)throw Error('Order not found.');if(input.version!==o.version)return new Response(JSON.stringify({error:'Another tab updated this order. Reload and try again.'}),{status:409});let text='';
 switch(input.action){
 case 'edit':for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));check(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods checked in.');text='Order details updated';break;
+case 'status':text=CustomOrders.changeStatus(o,input.status,input.worker,at);break;
 case 'price':text=CustomOrders.setPrice(o,input.customerPrice);break;
 case 'order':if(o.status!=='new'||!input.supplier)throw Error('Choose a supplier for this new order.');o.supplier=input.supplier;o.status='ordered';o.orderedAt=at;text='Order placement recorded with '+o.supplier+' (no email sent)';break;
 case 'supplier-confirmed':case 'supplier-ready':text=CustomOrders.progress(o,input.action,at);break;
@@ -59,7 +60,7 @@ case 'collect':if(!['received','notified'].includes(o.status))throw Error('Recei
 case 'note':if(!String(input.note||'').trim())throw Error('Enter a note.');text=String(input.note).slice(0,4000);break;
 default:throw Error('Unknown action.');
 }
-o.version++;o.history.push({at,text,by:o.owner});result=o;
+o.version++;o.history.push({at,text,by:input.action==='status'?o.manualStatus.by:o.owner});result=o;
 }
 const next=CustomOrders.syncTask(JSON.parse(localStorage.getItem(teamKey)),result,at);rememberSupplier(result.supplier,result.productType||'book');localStorage.setItem(teamKey,JSON.stringify(next));localStorage.setItem(key,JSON.stringify(records));return new Response(JSON.stringify(result),{status:url==='/api/orders'?201:200});
 }catch(e){return new Response(JSON.stringify({error:e.message}),{status:400});}

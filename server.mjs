@@ -149,6 +149,7 @@ const o=JSON.parse(row.document);
 if(input.version!==o.version)return send(409,{error:'Another employee updated this order. Reload and try again.'});
 let note='';
 if(input.action==='edit'){for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,CustomOrders.normalize(o),CustomOrders.normalizePayment(o));valid(o);if(o.quantity<o.received+o.damaged)throw Error('Quantity cannot be lower than goods already checked in.');note='Order details updated';}
+else if(input.action==='status'){note=CustomOrders.changeStatus(o,input.status,input.worker,now());}
 else if(input.action==='price'){note=CustomOrders.setPrice(o,input.customerPrice);}
 else if(input.action==='order'){if(o.status!=='new')throw Error('This order is already placed.');if(!input.supplier)throw Error('Choose a supplier.');o.supplier=input.supplier;valid(o);o.status='ordered';o.orderedAt=now();note=`Order placed with ${o.supplier}`;}
 else if(['supplier-confirmed','supplier-ready'].includes(input.action)){note=CustomOrders.progress(o,input.action,now());}
@@ -163,7 +164,7 @@ else if(input.action==='notify'){if(o.status!=='received'||o.kind==='Stock')thro
 else if(input.action==='collect'){if(!['received','notified'].includes(o.status))throw Error('Receive the full order before collection.');if(o.kind==='Customer'&&o.productType!=='plate'&&o.payment!=='Paid')throw Error('Mark the order paid before collection.');o.status='collected';note=o.kind==='Stock'?'Stock shelved':'Customer collected order';}
 else if(input.action==='note'){if(!String(input.note||'').trim())throw Error('Enter a note.');note=String(input.note).slice(0,4000);}
 else throw Error('Unknown action.');
-o.version++;o.history.push({at:now(),text:note,by:o.owner});const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);rememberSupplier(o.supplier,o.productType||'book');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(200,o);
+o.version++;o.history.push({at:now(),text:note,by:input.action==='status'?o.manualStatus.by:o.owner});const next=CustomOrders.syncTask(teamState(),o,now());db.exec('BEGIN');try{save(o);saveTeam(next);rememberSupplier(o.supplier,o.productType||'book');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(200,o);
 }
 if(req.method!=='GET'||!files[url.pathname]){res.writeHead(404);return res.end('Not found');}
 const name=files[url.pathname];res.writeHead(200,{'Content-Type':name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});res.end(readFileSync(path.join(root,name)));
