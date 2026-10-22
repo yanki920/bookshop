@@ -1,2 +1,16 @@
+[build]
+  command = "node tools/build-netlify.mjs"
+  publish = ".netlify-shop/public"
+  functions = "netlify/shop-functions"
+
+[build.environment]
+  NODE_VERSION = "24"
+
 [functions]
-  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true

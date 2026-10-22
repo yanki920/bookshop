@@ -1,6 +1,8 @@
 # Free hosting review — 20 October 2026
 
-## Recommendation
+> Superseded choice: the owner selected Netlify + Supabase. The migration is now prepared; see [NETLIFY.md](NETLIFY.md). The figures below remain a dated comparison, not a live deployment claim.
+
+## Earlier recommendation
 
 For a no-fixed-hosting-fee starting point, adapt the app to **Cloudflare Pages/Workers + Supabase Free**. Workers still open one private website; the two providers are implementation details. This is a recommendation for a migration, not an already deployable or deployed replacement. Do not proceed with the paid Render blueprint while the owner is considering this route.
 

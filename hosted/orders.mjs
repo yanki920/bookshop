@@ -1,0 +1,18 @@
+import Custom from '../custom-orders.js';
+import {HostedError} from './store.mjs';
+export const fields=['customer','book','owner','quantity','kind','channel','payment','supplier','phone','email','isbn','notes','location','productType','custom','neededBy','depositAmount'];
+export function validate(o){for(const k of ['customer','book','owner'])if(typeof o[k]!=='string'||!o[k].trim()||o[k].length>500)throw new HostedError('Please enter '+k+'.');if(!Number.isInteger(o.quantity)||o.quantity<1||o.quantity>10000)throw new HostedError('Quantity must be between 1 and 10,000.');if(!['Customer','Stock'].includes(o.kind)||!['SMS','WhatsApp','Email','None'].includes(o.channel)||!['Unpaid','Deposit','Paid'].includes(o.payment))throw new HostedError('Invalid order options.');if(typeof o.supplier!=='string'||o.supplier.length>200||/[\r\n]/.test(o.supplier))throw new HostedError('Invalid supplier.');for(const k of ['phone','email','isbn','notes','location'])if(typeof o[k]!=='string'||o[k].length>4000)throw new HostedError('Invalid '+k+'.');}
+export function newOrder(input,existing,id,at){const o=Object.fromEntries(fields.map(k=>[k,input[k]??(['quantity'].includes(k)?1:['custom'].includes(k)?{}:'')]));Object.assign(o,Custom.normalize(o),Custom.normalizePayment(o));validate(o);return {...o,id,reference:'TF-'+(Math.max(1040,...existing.map(o=>Number(o.reference.slice(3))||1040))+1),status:'new',createdAt:at,orderedAt:null,dispatchedAt:null,receivedAt:null,received:0,damaged:0,version:1,history:[{at,text:'Order created',by:o.owner}]};}
+export function updateOrder(existing,input,at){const o=structuredClone(existing);if(input.version!==o.version)throw new HostedError('Another employee updated this order. Reload and try again.',409);let text='';switch(input.action){
+case 'edit':for(const k of fields)if(k in input)o[k]=input[k];Object.assign(o,Custom.normalize(o),Custom.normalizePayment(o));validate(o);if(o.quantity<o.received+o.damaged)throw new HostedError('Quantity cannot be lower than goods already checked in.');text='Order details updated';break;
+case 'status':text=Custom.changeStatus(o,input.status,input.worker,at);break;
+case 'price':text=Custom.setPrice(o,input.customerPrice);break;
+case 'order':if(o.status!=='new'||!input.supplier)throw new HostedError('Choose a supplier for this new order.');o.supplier=input.supplier;validate(o);o.status='ordered';o.orderedAt=at;text='Order placed with '+o.supplier;break;
+case 'supplier-confirmed':case 'supplier-ready':text=Custom.progress(o,input.action,at);break;
+case 'dispatch':if(o.status!=='ordered')throw new HostedError('Only placed orders can be dispatched.');o.status='dispatched';o.dispatchedAt=at;text='Dispatch confirmation recorded manually';break;
+case 'receive':throw new HostedError('Use the delivery checklist to count goods, or Change status to mark an order arrived manually.');
+case 'notify':if(o.status!=='received'||o.kind!=='Customer')throw new HostedError('Only ready customer orders can be notified.');o.status='notified';text='Sample '+o.channel+' notification recorded — no message sent';break;
+case 'collect':if(!['received','notified'].includes(o.status))throw new HostedError('Receive the full order before collection.');if(o.kind==='Customer'&&o.productType!=='plate'&&o.payment!=='Paid')throw new HostedError('Mark the order paid before collection.');o.status='collected';text=o.kind==='Stock'?'Stock shelved':'Customer collected order';break;
+case 'note':if(!String(input.note||'').trim())throw new HostedError('Enter a note.');text=String(input.note).slice(0,4000);break;
+default:throw new HostedError('Unknown order action.');}
+o.version++;o.history.push({at,text,by:input.action==='status'?o.manualStatus.by:o.owner});return o;}

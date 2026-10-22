@@ -1,54 +1,20 @@
-# Tiferes customer orders — first version
+# Tiferes shop program
 
-The paid Render deployment is currently on hold. The [free-hosting review](deployment/FREE-HOSTING-REVIEW.md) recommends Cloudflare + Supabase after application changes; it is not yet implemented or deployed.
+The selected hosting route is **Netlify + Supabase**. The migration is prepared for review on `codex/trial-preview`; it is not yet deployed or connected to provider accounts. See [Netlify setup and recovery](deployment/NETLIFY.md). Render and the earlier Cloudflare proposal are on hold. The existing live site is unchanged.
 
-Private shared hosting is prepared in [deployment/README.md](deployment/README.md), with a Docker image and Render blueprint. It is not yet deployed; a hosting-account sign-in and approval of the provider service are still required.
+The responsive RTL app has three areas: customer orders, invoice deliveries, and private staff tasks/chat. Books, tefillin bags, stamps and door plates have separate lists. Customer phone search, editable payment/deposit details, manual order status, pre-unpacking 60 × 30 mm labels, invoice quantities/damage checks and the automatic delivery-to-order chain are implemented.
 
-A working development version for the customer-order workflow, with a responsive computer/tablet interface and a shared SQLite database. It is separate from the previous Firebase-backed application: no existing Firebase records are imported, modified or deleted.
+## Run and verify
 
-## Run
+Requires Node 24. `npm start` runs the existing local SQLite development server; `npm test` runs the tests. No npm packages are required by that server. Local records are in `.data/orders.sqlite` (`BOOKSHOP_DATA_DIR` overrides it). Do not expose this development server publicly without the access controls described in [deployment/README.md](deployment/README.md).
 
-Requires Node.js 24 or later. No npm dependencies or installation are needed.
+`node tools/build-netlify.mjs` creates the separate hosted frontend. Netlify Functions use Supabase Postgres/private file storage rather than local SQLite. Shared orders and deliveries use a shop entrance password, with personal sign-in for staff tasks. Concurrent edits are version checked and invoice/order updates commit together. Only changed shared records are polled. Backend credentials are never published to browsers.
 
-```sh
-npm start
-```
+## Connections and records
 
-The server listens on port 3000 on the local machine. For access from another device on a trusted development network, explicitly set `HOST=0.0.0.0` and allow the port through your network configuration. Before public shop deployment, configure HTTPS, BOOKSHOP_PUBLIC_ORIGIN, owner/worker accounts and tested backups. The public standalone trial is a separate sample-only build.
+Actual Gmail, SMS, WhatsApp and hosted Erply account integrations are **not connected**. Customer and supplier message text is editable/copyable; notification simulation never sends a real message. Erply access must remain read-only. Chat-plugin installation does not authorize the app's Gmail integration. No payments are charged by payment fields.
 
-The database is created at `.data/orders.sqlite`; sample orders are inserted only when the database is empty. `BOOKSHOP_DATA_DIR` overrides the data directory. Data survives app restarts. Devices using this same server share records, refreshed every 15 seconds when no form is open. Concurrent updates are protected with a version check.
-
-## Implemented
-
-- Create and search customer requests and stock orders, supplier/payment filters, employee assignments and editable contact/payment details.
-- Record actual supplier placement separately from a new request.
-- Manually record dispatch or a Friedman invoice, check cumulative received/damaged quantities, record collection location, and handle partial deliveries.
-- Print allocation labels for received items using the browser print dialog.
-- Compose editable supplier email text for outstanding/damaged goods; copy it for manual sending. Damage photo preview uses the device camera/file picker but does **not** persist or attach the photo.
-- Select orders and simulate batch customer notification. No SMS, email or WhatsApp is sent; the history explicitly records simulation.
-- Prevent collection of incomplete/unpaid customer orders; record shelf placement for stock.
-- Calendar-day Lehmanns follow-ups at 3 days (orange) and 6 days (red) with the responsible employee, live-derived follow-up list and order history.
-- Monthly first-arrival averages, supplier breakdown, open orders older than a week, and full JSON export.
-
-## Not yet connected / production work
-
-Erply, Gmail, Textmagic and WhatsApp require real server integrations and account authorisation. Installing Gmail in ChatGPT does not authorise this application. Email parsing/matching, automated sending, automatic supplier ordering, saved damage attachments, product/customer lookup, full order audit attribution, backup automation, restoration and hosted multi-device deployment are not implemented. Payment status is entered manually and does not charge a customer or reconcile Erply.
-
-Friedman alert timing and working-day/calendar-day policy await confirmation; no speculative Friedman deadlines are applied. Custom Judaica orders can be entered with notes, but weekly supplier batches and a structured customisation form are future work. Each record currently represents one product and one customer/stock allocation, rather than a multi-line supplier shipment.
-
-## Verification
-
-```sh
-npm test
-```
-
-The API integration test uses a temporary isolated database and verifies the full lifecycle, partial delivery, invalid transitions, concurrent updates, payment guard, export and persistence across restart. Browser verification uses Playwright installed outside this checkout in `/workspace/bookshop-tools` with system Chromium.
-
-## Preserve records
-
-Download a full JSON export from the app before significant changes. This is an export, not an automatic backup/restore system. For a filesystem backup, stop this app server, then copy the entire `.data` directory (including SQLite sidecar files) to protected backup storage before restarting. Never commit that directory. Test a restore on a separate copy before relying on it.
-
-The existing `netlify/` function and `netlify.toml` are retained from the earlier version. Static Netlify hosting alone does not run this new Node/SQLite server; use `npm start` for this version.
+No previous Firebase, SQLite or browser-trial data is silently imported or deleted. Keep existing exports before switching versions. Hosted complete backup/restore tooling includes private files; off-site scheduled backups still need a configured destination. Free provider limits and live account checks are described in the Netlify guide. Do not enter real customer data in a public standalone trial.
 
 ## Standalone trial before account connections
 

@@ -4,3 +4,8 @@
 # Local development database and backups
 .data/
 .demo/
+
+# Hosted build outputs and local secret files
+.netlify-shop/
+.env
+.env.*
